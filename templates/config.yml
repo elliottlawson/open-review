@@ -1,0 +1,35 @@
+# Open Review Configuration
+# https://github.com/elliottlawson/open-review
+
+# LLM Settings
+llm:
+  # Provider: anthropic or openai
+  provider: anthropic
+  
+  # Model to use for reviews
+  model: claude-sonnet-4-20250514
+
+# Review Behavior
+review:
+  # Path to your conventions/instructions file
+  # instructions_file: CONVENTIONS.md
+  
+  # Inline instructions (appended to file if both present)
+  # instructions: |
+  #   - Use PSR-12 coding standards
+  #   - All public methods must have docblocks
+  
+  # Flag PRs with no description
+  flag_empty_description: true
+
+# Linear Integration (optional)
+# linear:
+#   enabled: true
+
+# Files/patterns to ignore (glob patterns)
+# These are skipped during review
+ignore:
+  - "*.lock"
+  - "node_modules/**"
+  - "vendor/**"
+  - "dist/**"
