@@ -11,3 +11,4 @@ dist/
 SESSION-SUMMARY.md
 SETUP.md
 example-*.md
+package-lock.json
