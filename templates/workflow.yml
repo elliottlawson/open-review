@@ -23,7 +23,11 @@ jobs:
           node-version: '20'
 
       - name: Install Open Review
-        run: npm install -g github:elliottlawson/open-review
+        run: |
+          git clone --depth 1 https://github.com/elliottlawson/open-review.git /tmp/open-review
+          cd /tmp/open-review
+          npm install
+          npm link
 
       - name: Run Review
         env:
