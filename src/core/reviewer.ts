@@ -54,6 +54,7 @@ export interface ReviewOutput {
   result: ReviewResult;
   commentId?: number;
   postedFindings: number;
+  formattedComment: string;
 }
 
 // ============================================================================
@@ -253,6 +254,9 @@ export class Reviewer {
       console.log('🔍 Dry run - not posting comments');
     }
     
+    // Always generate formatted comment for dry run preview
+    const formattedComment = this.formatSummaryComment(result, linearContext);
+    
     return {
       reviewId,
       prContext,
@@ -260,6 +264,7 @@ export class Reviewer {
       result,
       commentId,
       postedFindings,
+      formattedComment,
     };
   }
   
@@ -270,71 +275,105 @@ export class Reviewer {
   private formatSummaryComment(result: ReviewResult, linearContext?: LinearContext): string {
     const lines: string[] = [];
     
-    // For clean approvals, keep it minimal (per methodology)
+    // Separate findings by severity
+    const mustFix = result.findings.filter(f => f.severity === 'critical');
+    const shouldFix = result.findings.filter(f => f.severity === 'warning');
+    const suggestions = result.findings.filter(f => f.severity === 'info' && f.type === 'suggestion');
+    const questions = result.findings.filter(f => f.type === 'question');
+    const infoItems = result.findings.filter(f => f.severity === 'info' && f.type !== 'suggestion' && f.type !== 'question');
+    
+    // Clean approval — one line, nothing else
     if (result.recommendation === 'approve' && result.findings.length === 0) {
-      lines.push('## ✅ LGTM — approve and merge');
+      return '✅ LGTM — approve and merge';
+    }
+    
+    // Approval with minor suggestions
+    if (result.recommendation === 'approve' || 
+        (result.recommendation === 'comment' && mustFix.length === 0 && shouldFix.length === 0)) {
+      lines.push('✅ LGTM — approve and merge. A couple minor suggestions below, nothing blocking.');
+      lines.push('');
+      
+      // Non-blocking items in collapsible
+      const nonBlocking = [...suggestions, ...infoItems, ...questions];
+      if (nonBlocking.length > 0) {
+        for (const finding of nonBlocking) {
+          const location = finding.file ? ` (\`${finding.file}${finding.line ? `:${finding.line}` : ''}\`)` : '';
+          lines.push(`- ${finding.title}${location}`);
+        }
+      }
+      
       return lines.join('\n');
     }
     
-    // Header with recommendation
-    const emoji = result.recommendation === 'approve' ? '✅' :
-                  result.recommendation === 'request_changes' ? '⚠️' : '💬';
-    lines.push(`## ${emoji} Code Review`);
-    lines.push('');
-    
-    // Summary
-    if (result.summary) {
-      lines.push(result.summary);
-      lines.push('');
-    }
-    
-    // Findings summary
-    if (result.findings.length > 0) {
-      const critical = result.findings.filter(f => f.severity === 'critical').length;
-      const warnings = result.findings.filter(f => f.severity === 'warning').length;
-      const info = result.findings.filter(f => f.severity === 'info').length;
-      
-      lines.push('### Findings');
-      lines.push('');
-      lines.push(`| Severity | Count |`);
-      lines.push(`|----------|-------|`);
-      if (critical > 0) lines.push(`| 🔴 Critical | ${critical} |`);
-      if (warnings > 0) lines.push(`| 🟡 Warning | ${warnings} |`);
-      if (info > 0) lines.push(`| 🔵 Info | ${info} |`);
+    // Changes requested
+    if (result.recommendation === 'request_changes' || mustFix.length > 0 || shouldFix.length > 0) {
+      // Verdict line with main concern
+      const mainConcern = mustFix[0]?.title || shouldFix[0]?.title || 'issues found that need attention';
+      lines.push(`🔄 Changes requested — ${mainConcern.toLowerCase()}`);
       lines.push('');
       
-      // List findings
-      for (const finding of result.findings) {
-        const severity = finding.severity === 'critical' ? '🔴' :
-                        finding.severity === 'warning' ? '🟡' : '🔵';
-        const location = finding.file ? ` in \`${finding.file}\`${finding.line ? `:${finding.line}` : ''}` : '';
-        lines.push(`- ${severity} **${finding.title}**${location}`);
-        if (finding.description) {
-          lines.push(`  ${finding.description.split('\n')[0]}`);
+      // Must fix section
+      if (mustFix.length > 0) {
+        lines.push('**Must fix:**');
+        for (let i = 0; i < mustFix.length; i++) {
+          const f = mustFix[i];
+          const location = f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '';
+          lines.push(`${i + 1}. ${f.title}${location}`);
         }
+        lines.push('');
       }
-      lines.push('');
+      
+      // Should fix section  
+      if (shouldFix.length > 0) {
+        lines.push('**Should fix:**');
+        for (const f of shouldFix) {
+          const location = f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '';
+          lines.push(`- ${f.title}${location}`);
+        }
+        lines.push('');
+      }
+      
+      // Non-blocking suggestions in collapsible
+      const nonBlocking = [...suggestions, ...infoItems];
+      if (nonBlocking.length > 0) {
+        lines.push('<details>');
+        lines.push('<summary>Suggestions (non-blocking)</summary>');
+        lines.push('');
+        for (const f of nonBlocking) {
+          const location = f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '';
+          lines.push(`- ${f.title}${location}`);
+        }
+        lines.push('</details>');
+      }
+      
+      return lines.join('\n');
     }
     
-    // Linear context (if any)
-    if (linearContext && linearContext.issues.length > 0) {
-      lines.push('### 🔗 Related Issues');
+    // Architectural/approach concern (questions without blocking issues)
+    if (questions.length > 0 && mustFix.length === 0 && shouldFix.length === 0) {
+      lines.push(`🤔 Hold — let's discuss the approach before going deeper on the code.`);
       lines.push('');
-      for (const issue of linearContext.issues) {
-        lines.push(`- [${issue.identifier}](${issue.url}): ${issue.title}`);
+      
+      if (result.summary) {
+        lines.push(result.summary);
+        lines.push('');
       }
-      lines.push('');
+      
+      lines.push('**Questions:**');
+      for (const q of questions) {
+        lines.push(`- ${q.title}`);
+      }
+      
+      return lines.join('\n');
     }
     
-    // Recommendation
-    lines.push('### Recommendation');
+    // Fallback: comment with info items
+    lines.push('💬 Left some feedback for consideration.');
     lines.push('');
-    if (result.recommendation === 'approve') {
-      lines.push('**Approve** - This PR is ready to merge.');
-    } else if (result.recommendation === 'request_changes') {
-      lines.push('**Request Changes** - Please address the findings above before merging.');
-    } else {
-      lines.push('**Comment** - Left some feedback for consideration.');
+    
+    for (const finding of result.findings) {
+      const location = finding.file ? ` (\`${finding.file}${finding.line ? `:${finding.line}` : ''}\`)` : '';
+      lines.push(`- ${finding.title}${location}`);
     }
     
     return lines.join('\n');

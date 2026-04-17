@@ -498,13 +498,22 @@ export class GitHubConnector {
   }
   
   private formatInlineComment(metadata: CommentMetadata, finding: ReviewFinding): string {
-    const severity = finding.severity === 'critical' ? '🔴' :
-                     finding.severity === 'warning' ? '🟡' : '🔵';
+    // Simple, human-like comment - no emoji bullets, no bold headers
+    let content = finding.description;
     
-    let content = `${severity} **${finding.title}**\n\n${finding.description}`;
-    
+    // Only add suggestion block if we have actual replacement code
+    // (starts with valid code characters, not prose like "Use", "Add", "Create", etc.)
     if (finding.suggestedFix) {
-      content += `\n\n**Suggested fix:**\n\`\`\`suggestion\n${finding.suggestedFix}\n\`\`\``;
+      const fix = finding.suggestedFix.trim();
+      const looksLikeCode = /^[a-z$_@#<\-\/\*\s'"(`{[]|^return |^public |^private |^protected |^function |^class |^const |^let |^var |^if |^for |^while /i.test(fix);
+      const looksLikeProse = /^(Use|Add|Create|Change|Replace|Remove|Consider|Move|Extract|Wrap|Call|Instead|Should|Could|Would|Try|Make|Set|Get|Put|Update|Delete|Insert|Implement|Define|Declare)/i.test(fix);
+      
+      if (looksLikeCode && !looksLikeProse) {
+        content += `\n\n\`\`\`suggestion\n${fix}\n\`\`\``;
+      } else {
+        // It's prose - just add it as a note, not a suggestion block
+        content += `\n\n${fix}`;
+      }
     }
     
     return this.formatComment(metadata, content);

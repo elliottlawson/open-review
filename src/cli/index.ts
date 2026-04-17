@@ -295,19 +295,9 @@ async function handlePRReview(args: CLIArgs): Promise<void> {
     }
     
     if (args.dryRun) {
-      console.log('\n--- Review Summary (Dry Run) ---');
-      console.log(output.result.summary);
-      
-      if (output.result.findings.length > 0) {
-        console.log('\n--- Findings ---');
-        for (const finding of output.result.findings) {
-          const severity = finding.severity === 'critical' ? '🔴' :
-                          finding.severity === 'warning' ? '🟡' : '🔵';
-          console.log(`\n${severity} ${finding.title}`);
-          if (finding.file) console.log(`   File: ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
-          console.log(`   ${finding.description}`);
-        }
-      }
+      console.log('\n--- GitHub Comment Preview ---');
+      console.log(output.formattedComment);
+      console.log('--- End Preview ---');
     }
     
     console.log('');
