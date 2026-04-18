@@ -20,6 +20,8 @@ import 'dotenv/config';
 import { createReviewer } from '../core/reviewer.js';
 import { loadConfigFromFile, type ResolvedConfig } from '../config/loader.js';
 import { runInit } from './init.js';
+import { handleReview, parseReviewArgs } from './review.js';
+import { handlePost, parsePostArgs } from './post.js';
 import type { OpenReviewConfig } from '../core/types.js';
 
 // ============================================================================
@@ -123,13 +125,20 @@ function parsePRRef(target: string): PRRef | null {
 
 function showHelp(): void {
   console.log(`
-Open Review - AI-powered PR code review
+Open Review - AI-powered code review
 
 Commands:
   open-review init              Set up Open Review in current repository
-  open-review pr <target>       Review a pull request
+  open-review review [path]     Review code locally (uses Mastra agent)
+  open-review pr <target>       Review a GitHub pull request
 
-Target formats:
+Review options:
+  --diff <ref>            Compare against git ref (e.g., main, HEAD~1, staged)
+  --json, --agent         Output token-efficient JSON for agent consumption
+  --max-steps <n>         Maximum agent steps (default: 100)
+  --instructions <file>   Path to conventions/instructions file
+
+Target formats (for pr command):
   owner/repo#123              Short format
   https://github.com/.../123  Full URL
   123                         PR number (requires GITHUB_REPOSITORY env)
@@ -326,10 +335,21 @@ async function main(): Promise<void> {
     case 'init':
       await runInit();
       break;
+    
+    case 'review':
+      // New local review command using Mastra agent
+      const reviewArgs = parseReviewArgs(process.argv.slice(3));
+      await handleReview(reviewArgs);
+      break;
       
     case 'pr':
-    case 'review':
       await handlePRReview(args);
+      break;
+    
+    case 'post':
+      // Post review results to GitHub PR
+      const postArgs = parsePostArgs(process.argv.slice(3));
+      await handlePost(postArgs);
       break;
       
     default:
