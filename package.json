@@ -1,5 +1,5 @@
 {
-  "name": "open-review",
+  "name": "@elliottlawson/open-review",
   "version": "0.1.0",
   "description": "AI-powered PR code review tool - automated code reviews using Claude or GPT",
   "main": "dist/index.js",
