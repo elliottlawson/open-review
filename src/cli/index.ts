@@ -19,7 +19,7 @@
 import 'dotenv/config';
 import { createReviewer } from '../core/reviewer.js';
 import { loadConfigFromFile, type ResolvedConfig } from '../config/loader.js';
-import { runInit } from './init.js';
+import { runInit, parseInitArgs } from './init.js';
 import { handleReview, parseReviewArgs } from './review.js';
 import { handlePost, parsePostArgs } from './post.js';
 import type { OpenReviewConfig } from '../core/types.js';
@@ -131,6 +131,12 @@ Commands:
   open-review init              Set up Open Review in current repository
   open-review review [path]     Review code locally (uses Mastra agent)
   open-review pr <target>       Review a GitHub pull request
+
+Init options:
+  -y, --quick             Non-interactive setup with defaults
+  -f, --force             Overwrite existing files without asking
+  -p, --provider <name>   LLM provider (anthropic, openai)
+  -m, --model <name>      LLM model name
 
 Review options:
   --diff <ref>            Compare against git ref (e.g., main, HEAD~1, staged)
@@ -333,7 +339,8 @@ async function main(): Promise<void> {
   
   switch (args.command) {
     case 'init':
-      await runInit();
+      const initFlags = parseInitArgs(process.argv.slice(3));
+      await runInit(process.cwd(), initFlags);
       break;
     
     case 'review':

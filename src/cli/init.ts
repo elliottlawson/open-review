@@ -27,6 +27,36 @@ interface InitOptions {
   useLinear: boolean;
 }
 
+interface InitFlags {
+  quick: boolean;      // Skip prompts, use defaults
+  provider?: 'anthropic' | 'openai';
+  model?: string;
+  force: boolean;      // Overwrite existing files without asking
+}
+
+export function parseInitArgs(args: string[]): InitFlags {
+  const flags: InitFlags = {
+    quick: false,
+    force: false,
+  };
+  
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '--quick' || arg === '-y' || arg === '--yes') {
+      flags.quick = true;
+    } else if (arg === '--force' || arg === '-f') {
+      flags.force = true;
+    } else if (arg === '--provider' || arg === '-p') {
+      flags.provider = args[++i] as 'anthropic' | 'openai';
+    } else if (arg === '--model' || arg === '-m') {
+      flags.model = args[++i];
+    }
+  }
+  
+  return flags;
+}
+
 // ============================================================================
 // Project Detection
 // ============================================================================
@@ -208,13 +238,9 @@ function generateConfig(options: InitOptions): string {
 }
 
 function generateWorkflow(options: InitOptions): string {
-  const apiKeyEnv = options.provider === 'anthropic' 
-    ? 'ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}'
-    : 'OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}';
-  
-  const linearEnv = options.useLinear 
-    ? '\n          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}'
-    : '';
+  const apiKeySecret = options.provider === 'anthropic' 
+    ? 'ANTHROPIC_API_KEY'
+    : 'OPENAI_API_KEY';
   
   return `name: Open Review
 
@@ -228,39 +254,134 @@ permissions:
 
 jobs:
   review:
-    name: AI Code Review
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: '20'
+          fetch-depth: 0
 
-      - name: Install Open Review
-        run: |
-          git clone --depth 1 https://github.com/elliottlawson/open-review.git /tmp/open-review
-          cd /tmp/open-review
-          npm install
-          npm link
-
-      - name: Run Review
-        env:
-          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-          ${apiKeyEnv}${linearEnv}
-        run: |
-          open-review pr \${{ github.repository }}#\${{ github.event.pull_request.number }}
+      - uses: elliottlawson/open-review-action@main
+        with:
+          provider: ${options.provider}
+          model: ${options.model}
+          api_key: \${{ secrets.${apiKeySecret} }}
 `;
+}
+
+// ============================================================================
+// Quick (Non-Interactive) Init
+// ============================================================================
+
+async function runQuickInit(
+  cwd: string, 
+  flags: InitFlags, 
+  configExists: boolean, 
+  workflowExists: boolean
+): Promise<void> {
+  console.log('\n🔧 Open Review Quick Setup\n');
+  
+  // Check for existing files
+  if ((configExists || workflowExists) && !flags.force) {
+    console.error('⚠️  Existing files detected:');
+    if (configExists) console.error('   - .open-review.yml');
+    if (workflowExists) console.error('   - .github/workflows/open-review.yml');
+    console.error('\nUse --force to overwrite existing files.');
+    process.exit(1);
+  }
+  
+  // Detect project type
+  const detectedType = detectProjectType(cwd);
+  const typeInfo = PROJECT_TYPES[detectedType];
+  console.log(`📁 Detected project type: ${typeInfo.name}`);
+  
+  // Build options from flags + defaults
+  const options: InitOptions = {
+    provider: flags.provider || 'anthropic',
+    model: flags.model || (flags.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'),
+    projectType: detectedType,
+    ignorePatterns: [...typeInfo.ignores],
+    useLinear: false,
+  };
+  
+  // Auto-detect instructions file
+  const detectedInstructions = detectInstructionsFile(cwd);
+  if (detectedInstructions) {
+    console.log(`✓ Found instructions file: ${detectedInstructions}`);
+    options.instructionsFile = detectedInstructions;
+  }
+  
+  // Generate and write files
+  writeInitFiles(cwd, options);
+  
+  // Print next steps
+  printNextSteps(options);
+}
+
+// ============================================================================
+// File Writing (shared between interactive and quick modes)
+// ============================================================================
+
+function writeInitFiles(cwd: string, options: InitOptions): void {
+  console.log('\n📝 Creating files...\n');
+  
+  // Config file
+  const configContent = generateConfig(options);
+  writeFileSync(join(cwd, '.open-review.yml'), configContent);
+  console.log('   ✓ Created .open-review.yml');
+  
+  // Workflow file
+  const workflowDir = join(cwd, '.github', 'workflows');
+  if (!existsSync(workflowDir)) {
+    mkdirSync(workflowDir, { recursive: true });
+  }
+  const workflowContent = generateWorkflow(options);
+  writeFileSync(join(workflowDir, 'open-review.yml'), workflowContent);
+  console.log('   ✓ Created .github/workflows/open-review.yml');
+}
+
+function printNextSteps(options: InitOptions): void {
+  console.log('\n' + '='.repeat(50));
+  console.log('✅ Setup complete!\n');
+  console.log('Next steps:\n');
+  
+  console.log('1. Add your API key to GitHub Secrets:');
+  console.log('   Go to: Settings → Secrets and variables → Actions');
+  if (options.provider === 'anthropic') {
+    console.log('   Add secret: ANTHROPIC_API_KEY');
+  } else {
+    console.log('   Add secret: OPENAI_API_KEY');
+  }
+  if (options.useLinear) {
+    console.log('   Add secret: LINEAR_API_KEY');
+  }
+  
+  if (!options.instructionsFile) {
+    console.log('\n2. (Optional) Create a CONVENTIONS.md file:');
+    console.log('   Add your coding standards and the reviewer will enforce them.');
+  }
+  
+  console.log('\n3. Commit and push these files:');
+  console.log('   git add .open-review.yml .github/workflows/open-review.yml');
+  console.log('   git commit -m "Add Open Review automated code review"');
+  console.log('   git push');
+  
+  console.log('\n4. Open a PR to see it in action!');
+  console.log('');
 }
 
 // ============================================================================
 // Main Init Function
 // ============================================================================
 
-export async function runInit(cwd: string = process.cwd()): Promise<void> {
+export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { quick: false, force: false }): Promise<void> {
+  const configExists = existsSync(join(cwd, '.open-review.yml'));
+  const workflowExists = existsSync(join(cwd, '.github/workflows/open-review.yml'));
+  
+  // Quick mode: non-interactive setup with sensible defaults
+  if (flags.quick) {
+    return runQuickInit(cwd, flags, configExists, workflowExists);
+  }
+  
   const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -272,9 +393,6 @@ export async function runInit(cwd: string = process.cwd()): Promise<void> {
   console.log('  2. .github/workflows/open-review.yml - GitHub Action workflow\n');
   
   // Check for existing files
-  const configExists = existsSync(join(cwd, '.open-review.yml'));
-  const workflowExists = existsSync(join(cwd, '.github/workflows/open-review.yml'));
-  
   if (configExists || workflowExists) {
     console.log('⚠️  Existing files detected:');
     if (configExists) console.log('   - .open-review.yml');
@@ -354,49 +472,9 @@ export async function runInit(cwd: string = process.cwd()): Promise<void> {
   
   rl.close();
   
-  // Generate files
-  console.log('\n📝 Creating files...\n');
+  // Generate and write files using shared helper
+  writeInitFiles(cwd, options);
   
-  // Config file
-  const configContent = generateConfig(options);
-  writeFileSync(join(cwd, '.open-review.yml'), configContent);
-  console.log('   ✓ Created .open-review.yml');
-  
-  // Workflow file
-  const workflowDir = join(cwd, '.github', 'workflows');
-  if (!existsSync(workflowDir)) {
-    mkdirSync(workflowDir, { recursive: true });
-  }
-  const workflowContent = generateWorkflow(options);
-  writeFileSync(join(workflowDir, 'open-review.yml'), workflowContent);
-  console.log('   ✓ Created .github/workflows/open-review.yml');
-  
-  // Print next steps
-  console.log('\n' + '='.repeat(50));
-  console.log('✅ Setup complete!\n');
-  console.log('Next steps:\n');
-  
-  console.log('1. Add your API key to GitHub Secrets:');
-  console.log('   Go to: Settings → Secrets and variables → Actions');
-  if (options.provider === 'anthropic') {
-    console.log('   Add secret: ANTHROPIC_API_KEY');
-  } else {
-    console.log('   Add secret: OPENAI_API_KEY');
-  }
-  if (options.useLinear) {
-    console.log('   Add secret: LINEAR_API_KEY');
-  }
-  
-  if (!options.instructionsFile) {
-    console.log('\n2. (Optional) Create a CONVENTIONS.md file:');
-    console.log('   Add your coding standards and the reviewer will enforce them.');
-  }
-  
-  console.log('\n3. Commit and push these files:');
-  console.log('   git add .open-review.yml .github/workflows/open-review.yml');
-  console.log('   git commit -m "Add Open Review automated code review"');
-  console.log('   git push');
-  
-  console.log('\n4. Open a PR to see it in action!');
-  console.log('');
+  // Print next steps using shared helper
+  printNextSteps(options);
 }
