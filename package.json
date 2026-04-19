@@ -1,6 +1,6 @@
 {
   "name": "@elliottlawson/open-review",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "AI-powered PR code review tool - automated code reviews using Claude or GPT",
   "main": "dist/index.js",
   "type": "module",
