@@ -10,6 +10,7 @@
 import { GitHubConnector, type PRContext } from '../connectors/github.js';
 import { runReview, type ReviewAgentConfig } from './agent.js';
 import type { OpenReviewConfig, ReviewResult, ReviewFinding } from './types.js';
+import { renderComment, DEFAULT_TEMPLATE_CONFIG } from '../output/index.js';
 
 // Fallback convention file names to look for (in order of priority)
 const CONVENTION_FILES = [
@@ -145,7 +146,7 @@ export class Reviewer {
     // Step 5: Format and post comments
     let commentId: number | undefined;
     let postedFindings = 0;
-    const formattedComment = this.formatSummaryComment(result);
+    const formattedComment = this.formatSummaryComment(result, isReReview);
 
     if (!dryRun && this.config.review.postComments) {
       if (verbose) console.log('💬 Posting review...');
@@ -258,70 +259,13 @@ export class Reviewer {
   // Formatting
   // ==========================================================================
 
-  private formatSummaryComment(result: ReviewResult): string {
-    const lines: string[] = [];
-
-    // Clean approval — one line
-    if (result.recommendation === 'approve' && result.findings.length === 0) {
-      return '✅ LGTM — approve and merge';
-    }
-
-    const mustFix = result.findings.filter(f => f.severity === 'critical');
-    const shouldFix = result.findings.filter(f => f.severity === 'warning');
-    const infoItems = result.findings.filter(f => f.severity === 'info');
-
-    // Approval with minor items
-    if (result.recommendation === 'approve' ||
-        (result.recommendation === 'comment' && mustFix.length === 0 && shouldFix.length === 0)) {
-      lines.push('✅ LGTM — approve and merge');
-
-      if (infoItems.length > 0) {
-        lines.push('');
-        lines.push('**Notes:**');
-        for (const f of infoItems) {
-          const location = f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '';
-          lines.push(`- ${f.title}${location}`);
-        }
-      }
-
-      return lines.join('\n');
-    }
-
-    // Changes requested
-    lines.push('🔄 Changes requested');
-    lines.push('');
-
-    if (mustFix.length > 0) {
-      lines.push('**Must fix:**');
-      for (let i = 0; i < mustFix.length; i++) {
-        const f = mustFix[i];
-        const location = f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '';
-        lines.push(`${i + 1}. ${f.title}${location}`);
-      }
-      lines.push('');
-    }
-
-    if (shouldFix.length > 0) {
-      lines.push('**Should fix:**');
-      for (const f of shouldFix) {
-        const location = f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '';
-        lines.push(`- ${f.title}${location}`);
-      }
-      lines.push('');
-    }
-
-    if (infoItems.length > 0) {
-      lines.push('<details>');
-      lines.push('<summary>Notes</summary>');
-      lines.push('');
-      for (const f of infoItems) {
-        const location = f.file ? ` (\`${f.file}${f.line ? `:${f.line}` : ''}\`)` : '';
-        lines.push(`- ${f.title}${location}`);
-      }
-      lines.push('</details>');
-    }
-
-    return lines.join('\n');
+  private formatSummaryComment(result: ReviewResult, isReReview: boolean): string {
+    return renderComment({
+      result,
+      config: DEFAULT_TEMPLATE_CONFIG,
+      state: 'complete',
+      isReReview,
+    });
   }
 
   private formatFindingsForSummary(findings: ReviewFinding[]): string {
