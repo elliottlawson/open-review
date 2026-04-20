@@ -8,6 +8,7 @@ import { readFileSync } from 'fs';
 import { Octokit } from '@octokit/rest';
 import type { ReviewResult, ReviewFinding } from '../core/types.js';
 import type { AgentOutput, AgentFinding } from '../output/agent.js';
+import { renderComment, DEFAULT_TEMPLATE_CONFIG } from '../output/index.js';
 
 // ============================================================================
 // Types
@@ -128,65 +129,30 @@ function formatFindingForGitHub(finding: NormalizedFinding): string {
 }
 
 function formatReviewComment(result: NormalizedResult): string {
-  const lines: string[] = [];
-  
-  // Header
-  lines.push(`## ${verdictEmoji(result.verdict)} Open Review`);
-  lines.push('');
-  
-  // Summary
-  lines.push(`**Verdict:** ${result.verdict.replace('_', ' ').toUpperCase()}`);
-  lines.push('');
-  lines.push(result.summary);
-  lines.push('');
-  
-  // Group findings by severity
-  const critical = result.findings.filter(f => f.severity === 'critical');
-  const warnings = result.findings.filter(f => f.severity === 'warning');
-  const suggestions = result.findings.filter(f => f.severity === 'info');
-  const praise = result.findings.filter(f => f.type === 'praise');
-  
-  if (critical.length > 0) {
-    lines.push(`### 🔴 Critical Issues (${critical.length})`);
-    lines.push('');
-    for (const finding of critical) {
-      lines.push(formatFindingForGitHub(finding));
-      lines.push('');
-    }
-  }
-  
-  if (warnings.length > 0) {
-    lines.push(`### 🟡 Warnings (${warnings.length})`);
-    lines.push('');
-    for (const finding of warnings) {
-      lines.push(formatFindingForGitHub(finding));
-      lines.push('');
-    }
-  }
-  
-  if (suggestions.length > 0) {
-    lines.push(`### 🔵 Suggestions (${suggestions.length})`);
-    lines.push('');
-    for (const finding of suggestions) {
-      lines.push(formatFindingForGitHub(finding));
-      lines.push('');
-    }
-  }
-  
-  if (praise.length > 0) {
-    lines.push(`### ✅ Good Stuff (${praise.length})`);
-    lines.push('');
-    for (const finding of praise) {
-      lines.push(`- **${finding.title}**: ${finding.description}`);
-    }
-    lines.push('');
-  }
-  
-  // Footer
-  lines.push('---');
-  lines.push(`*Reviewed by [Open Review](https://github.com/elliottlawson/open-review)*`);
-  
-  return lines.join('\n');
+  // Convert NormalizedResult to ReviewResult for the template
+  const reviewResult: ReviewResult = {
+    summary: result.summary,
+    recommendation: result.verdict as ReviewResult['recommendation'],
+    findings: result.findings.map(f => ({
+      id: '',
+      type: (f.type as ReviewFinding['type']) || 'issue',
+      severity: f.severity,
+      category: f.category,
+      title: f.title,
+      description: f.description,
+      file: f.file,
+      line: f.line,
+      suggestedFix: f.suggestedFix,
+    })),
+    tokensUsed: result.tokensUsed,
+  };
+
+  // Use new template system
+  return renderComment({
+    result: reviewResult,
+    config: DEFAULT_TEMPLATE_CONFIG,
+    state: 'complete',
+  });
 }
 
 // ============================================================================
