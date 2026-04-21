@@ -455,7 +455,7 @@ export class GitHubConnector {
     let content = `${severity} **${finding.title}**\n\n${finding.description}`;
 
     if (finding.suggestedFix) {
-      content += `\n\n**Suggested fix:**\n\`\`\`suggestion\n${finding.suggestedFix}\n\`\`\``;
+      content += `\n\n**Suggested fix:**\n\n\`\`\`suggestion\n${finding.suggestedFix}\n\`\`\``;
     }
 
     return this.formatComment(metadata, content);

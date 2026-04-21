@@ -2,22 +2,16 @@
 
 /**
  * Open Review CLI
- * 
+ *
  * Usage:
  *   open-review init                Set up Open Review in current repo
  *   open-review review [path]       Review code locally (uses Mastra agent)
- *   open-review pr <target>         Review a PR (⚠️  See docs/DD-001-pr-command.md)
- * 
+ *   open-review setup-github        Create GitHub Action workflow for PR reviews
+ *
  * Options:
- *   --dry-run    Don't post comments, just show what would be posted
  *   --verbose    Show detailed progress
  *   --model      Override the LLM model
  *   --provider   Override the LLM provider
- * 
- * ⚠️  DESIGN DECISION IN PROGRESS:
- * The 'pr' command behavior is being reconsidered. Current implementation posts to
- * GitHub which violates our platform-agnostic architecture.
- * See: docs/DD-001-pr-command.md for options and discussion.
  */
 
 import 'dotenv/config';

@@ -136,11 +136,45 @@ const Icons = {
 // Primitive Helpers
 // ============================================================================
 
+function mustFixHeader(icon: string, title: string): string {
+  return `\n${icon}### ${title}\n\n`;
+}
+
+function shouldFixHeader(icon: string, title: string): string {
+  return `\n${icon}### ${title}\n\n`;
+}
+
+function questionsHeader(icon: string, title: string): string {
+  return `\n${icon}### ${title}\n\n`;
+}
+
 function bold(text: string): string {
   return `**${text}**`;
 }
 
 function muted(text: string): string {
+  // GitHub supports some HTML styling
+  return `<span style="color: ${Colors.muted};">${text}</span>`;
+}
+
+function code(text: string): string {
+  return `\`${text}\``;
+}
+
+function location(file: string, line?: number): string {
+  const loc = line ? `${file}:${line}` : file;
+  return code(loc);
+}
+
+function details(summary: string, content: string, open: boolean = false): string {
+  const openAttr = open ? ' open' : '';
+  return `<details${openAttr}>
+<summary>${summary}</summary>
+
+${content}
+</details>`;
+}
+
   // GitHub supports some HTML styling
   return `<span style="color: ${Colors.muted};">${text}</span>`;
 }
@@ -226,9 +260,7 @@ function MustFixSection(findings: ReviewFinding[], config: SectionConfig): strin
     return `**${i + 1}. ${f.title}**${loc}`;
   }).join('\n');
 
-  return `\n${Icons.mustFix}${bold('Must fix')}
-
-${items}`;
+  return mustFixHeader(Icons.mustFix, 'Must fix') + '\n' + items;
 }
 
 /** ④ SHOULD FIX (OPTIONAL) - Non-blocking improvements */
@@ -243,9 +275,7 @@ function ShouldFixSection(findings: ReviewFinding[], config: SectionConfig): str
     return `**- ${f.title}**${loc}`;
   }).join('\n');
 
-  return `\n${Icons.shouldFix}${bold('Should fix')}
-
-${items}`;
+  return shouldFixHeader(Icons.shouldFix, 'Should fix') + '\n' + items;
 }
 
 /** ⑤ SUGGESTIONS (COLLAPSIBLE) - Nice-to-have, configurable default state */
@@ -281,9 +311,7 @@ function QuestionsSection(findings: ReviewFinding[], config?: SectionConfig): st
 
   const items = questions.map(f => `**- ${f.title}**`).join('\n');
 
-  return `\n${Icons.question}${bold('Questions for the team')}
-
-${items}`;
+  return questionsHeader(Icons.question, 'Questions for the team') + '\n' + items;
 }
 
 /** ADDITIONAL COMMENTS - General feedback not tied to findings */
@@ -419,7 +447,7 @@ export function renderInlineComment(options: InlineCommentOptions): string {
                        finding.severity === 'warning' ? '🟡' : '🔵';
 
   const parts: string[] = [
-    `${severityIcon} ${bold(finding.title)}`,
+    `${severityIcon} **${finding.title}**`,
     '',
     finding.description,
   ];
