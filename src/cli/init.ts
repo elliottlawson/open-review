@@ -24,7 +24,6 @@ interface InitOptions {
   projectType: ProjectType;
   instructionsFile?: string;
   ignorePatterns: string[];
-  useLinear: boolean;
 }
 
 interface InitFlags {
@@ -215,13 +214,7 @@ function generateConfig(options: InitOptions): string {
   lines.push('  #   - Add any additional review instructions here');
   lines.push('  flag_empty_description: true');
   
-  // Linear
-  if (options.useLinear) {
-    lines.push('');
-    lines.push('# Linear Integration');
-    lines.push('linear:');
-    lines.push('  enabled: true');
-  }
+
   
   // Ignore patterns
   if (options.ignorePatterns.length > 0) {
@@ -237,55 +230,24 @@ function generateConfig(options: InitOptions): string {
   return lines.join('\n');
 }
 
-function generateWorkflow(options: InitOptions): string {
-  const apiKeySecret = options.provider === 'anthropic' 
-    ? 'ANTHROPIC_API_KEY'
-    : 'OPENAI_API_KEY';
-  
-  return `name: Open Review
 
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: elliottlawson/open-review-action@main
-        with:
-          provider: ${options.provider}
-          model: ${options.model}
-          api_key: \${{ secrets.${apiKeySecret} }}
-`;
-}
 
 // ============================================================================
 // Quick (Non-Interactive) Init
 // ============================================================================
 
 async function runQuickInit(
-  cwd: string, 
-  flags: InitFlags, 
-  configExists: boolean, 
-  workflowExists: boolean
+  cwd: string,
+  flags: InitFlags,
+  configExists: boolean
 ): Promise<void> {
   console.log('\n🔧 Open Review Quick Setup\n');
-  
-  // Check for existing files
-  if ((configExists || workflowExists) && !flags.force) {
-    console.error('⚠️  Existing files detected:');
-    if (configExists) console.error('   - .open-review.yml');
-    if (workflowExists) console.error('   - .github/workflows/open-review.yml');
-    console.error('\nUse --force to overwrite existing files.');
+
+  // Check for existing file
+  if (configExists && !flags.force) {
+    console.error('⚠️  Existing file detected:');
+    console.error('   - .open-review.yml');
+    console.error('\nUse --force to overwrite existing file.');
     process.exit(1);
   }
   
@@ -300,7 +262,6 @@ async function runQuickInit(
     model: flags.model || (flags.provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514'),
     projectType: detectedType,
     ignorePatterns: [...typeInfo.ignores],
-    useLinear: false,
   };
   
   // Auto-detect instructions file
@@ -322,50 +283,36 @@ async function runQuickInit(
 // ============================================================================
 
 function writeInitFiles(cwd: string, options: InitOptions): void {
-  console.log('\n📝 Creating files...\n');
-  
+  console.log('\n📝 Creating file...\n');
+
   // Config file
   const configContent = generateConfig(options);
   writeFileSync(join(cwd, '.open-review.yml'), configContent);
   console.log('   ✓ Created .open-review.yml');
-  
-  // Workflow file
-  const workflowDir = join(cwd, '.github', 'workflows');
-  if (!existsSync(workflowDir)) {
-    mkdirSync(workflowDir, { recursive: true });
-  }
-  const workflowContent = generateWorkflow(options);
-  writeFileSync(join(workflowDir, 'open-review.yml'), workflowContent);
-  console.log('   ✓ Created .github/workflows/open-review.yml');
 }
 
 function printNextSteps(options: InitOptions): void {
   console.log('\n' + '='.repeat(50));
   console.log('✅ Setup complete!\n');
   console.log('Next steps:\n');
-  
-  console.log('1. Add your API key to GitHub Secrets:');
-  console.log('   Go to: Settings → Secrets and variables → Actions');
+
+  console.log('1. Set your API key environment variable:');
   if (options.provider === 'anthropic') {
-    console.log('   Add secret: ANTHROPIC_API_KEY');
+    console.log('   export ANTHROPIC_API_KEY=your_key_here');
   } else {
-    console.log('   Add secret: OPENAI_API_KEY');
+    console.log('   export OPENAI_API_KEY=your_key_here');
   }
-  if (options.useLinear) {
-    console.log('   Add secret: LINEAR_API_KEY');
-  }
-  
+
   if (!options.instructionsFile) {
     console.log('\n2. (Optional) Create a CONVENTIONS.md file:');
     console.log('   Add your coding standards and the reviewer will enforce them.');
   }
-  
-  console.log('\n3. Commit and push these files:');
-  console.log('   git add .open-review.yml .github/workflows/open-review.yml');
-  console.log('   git commit -m "Add Open Review automated code review"');
-  console.log('   git push');
-  
-  console.log('\n4. Open a PR to see it in action!');
+
+  console.log('\n3. Review your code:');
+  console.log('   open-review review --diff main');
+
+  console.log('\n4. (Optional) Set up GitHub Actions:');
+  console.log('   open-review setup-github');
   console.log('');
 }
 
@@ -375,33 +322,53 @@ function printNextSteps(options: InitOptions): void {
 
 export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { quick: false, force: false }): Promise<void> {
   const configExists = existsSync(join(cwd, '.open-review.yml'));
-  const workflowExists = existsSync(join(cwd, '.github/workflows/open-review.yml'));
-  
+
   // Quick mode: non-interactive setup with sensible defaults
   if (flags.quick) {
-    return runQuickInit(cwd, flags, configExists, workflowExists);
+    return runQuickInit(cwd, flags, configExists);
   }
-  
+
   const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
   });
-  
+
   console.log('\n🔧 Open Review Setup\n');
   console.log('This wizard will create:');
-  console.log('  1. .open-review.yml - Configuration file');
-  console.log('  2. .github/workflows/open-review.yml - GitHub Action workflow\n');
-  
-  // Check for existing files
-  if (configExists || workflowExists) {
+  console.log('  1. .open-review.yml - Configuration file\n');
+
+  const interactiveRl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  // Check for existing file
+  if (configExists) {
     console.log('⚠️  Existing files detected:');
-    if (configExists) console.log('   - .open-review.yml');
-    if (workflowExists) console.log('   - .github/workflows/open-review.yml');
-    
-    const overwrite = await promptYesNo(rl, 'Overwrite existing files?', false);
+    console.log('   - .open-review.yml');
+
+    const overwrite = await promptYesNo(interactiveRl, 'Overwrite existing file?', false);
     if (!overwrite) {
       console.log('\nSetup cancelled.');
-      rl.close();
+      interactiveRl.close();
+      return;
+    }
+    console.log('');
+  }
+
+  console.log('\n🔧 Open Review Setup\n');
+  console.log('This wizard will create:');
+  console.log('  1. .open-review.yml - Configuration file\n');
+
+  // Check for existing file
+  if (configExists) {
+    console.log('⚠️  Existing files detected:');
+    console.log('   - .open-review.yml');
+
+    const overwrite = await promptYesNo(interactiveRl, 'Overwrite existing file?', false);
+    if (!overwrite) {
+      console.log('\nSetup cancelled.');
+      interactiveRl.close();
       return;
     }
     console.log('');
@@ -418,12 +385,11 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
     model: 'claude-sonnet-4-20250514',
     projectType: detectedType,
     ignorePatterns: [...typeInfo.ignores],
-    useLinear: false,
   };
   
   // Provider selection
   const providerChoice = await promptChoice(
-    rl,
+    interactiveRl,
     'Which LLM provider do you want to use?',
     ['Anthropic (Claude) - Recommended', 'OpenAI (GPT-4)'],
     0
@@ -438,12 +404,12 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
     options.instructionsFile = detectedInstructions;
   } else {
     const wantInstructions = await promptYesNo(
-      rl,
+      interactiveRl,
       '\nDo you have a coding conventions/standards file?',
       false
     );
     if (wantInstructions) {
-      const path = await prompt(rl, 'Path to file: ');
+      const path = await prompt(interactiveRl, 'Path to file: ');
       if (path && existsSync(join(cwd, path))) {
         options.instructionsFile = path;
       } else if (path) {
@@ -458,19 +424,12 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
   for (const pattern of options.ignorePatterns) {
     console.log(`  - ${pattern}`);
   }
-  const useIgnores = await promptYesNo(rl, 'Use these ignore patterns?', true);
+  const useIgnores = await promptYesNo(interactiveRl, 'Use these ignore patterns?', true);
   if (!useIgnores) {
     options.ignorePatterns = [];
   }
-  
-  // Linear integration
-  options.useLinear = await promptYesNo(
-    rl,
-    'Do you use Linear for issue tracking?',
-    false
-  );
-  
-  rl.close();
+
+  interactiveRl.close();
   
   // Generate and write files using shared helper
   writeInitFiles(cwd, options);

@@ -47,14 +47,9 @@ const TemplateConfigSchema = z.object({
   footer: FooterConfigSchema.optional(),
 });
 
-const LinearConfigSchema = z.object({
-  enabled: z.boolean().default(false),
-});
-
 export const ConfigSchema = z.object({
   llm: LLMConfigSchema.optional(),
   review: ReviewConfigSchema.optional(),
-  linear: LinearConfigSchema.optional(),
   // Files/paths to ignore (glob patterns)
   ignore: z.array(z.string()).optional(),
 });
@@ -69,7 +64,6 @@ export type OpenReviewYamlConfig = z.infer<typeof ConfigSchema>;
 export interface ResolvedConfig {
   llm: z.infer<typeof LLMConfigSchema>;
   review: z.infer<typeof ReviewConfigSchema>;
-  linear: z.infer<typeof LinearConfigSchema>;
   ignore: string[];
 }
 
@@ -78,7 +72,6 @@ export function resolveConfig(config: OpenReviewYamlConfig): ResolvedConfig {
   return {
     llm: LLMConfigSchema.parse(config.llm ?? {}),
     review: ReviewConfigSchema.parse(config.review ?? {}),
-    linear: LinearConfigSchema.parse(config.linear ?? {}),
     ignore: config.ignore ?? [],
   };
 }

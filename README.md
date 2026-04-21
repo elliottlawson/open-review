@@ -1,14 +1,19 @@
 # Open Review
 
-AI-powered PR code review tool. Automatically reviews pull requests using Claude or GPT, posts comments to GitHub, and enforces your coding conventions.
+AI-powered code review tool for local development and CI/CD. Reviews code using Claude or GPT, with flexible output for terminal, JSON, or platform-specific formats.
 
 ## Features
 
-- **Automated code review** on every PR
-- **Multiple LLM providers**: Anthropic Claude, OpenAI GPT-4
+- **Local code review** - Review changes before pushing
+- **CI/CD integration** - GitHub Action for PR reviews
+- **Multiple LLM providers**: Anthropic Claude, OpenAI GPT-4, OpenRouter
 - **Convention enforcement**: Reads your CONVENTIONS.md and enforces project rules
-- **Smart comment lifecycle**: Updates comments in place, auto-resolves when issues are fixed
-- **Linear integration**: Links related Linear issues in reviews (optional)
+- **Flexible output**: Terminal, JSON, or GitHub-formatted markdown
+- **Linear integration**: Links related Linear issues (optional)
+
+## Philosophy
+
+Open Review is **platform-agnostic**. The core engine reads code from your local filesystem and generates reviews. Platform-specific features (fetching PR metadata, posting comments) are handled by separate drivers like the [GitHub Action](https://github.com/elliottlawson/open-review-action).
 
 ## Quick Start
 
@@ -27,16 +32,68 @@ open-review init
 
 This creates:
 - `.open-review.yml` - Configuration file
-- `.github/workflows/open-review.yml` - GitHub Action workflow
 
-### 3. Add API key to GitHub Secrets
+### 3. Set up your API key
 
-Go to your repo's **Settings → Secrets and variables → Actions** and add:
-- `ANTHROPIC_API_KEY` (for Claude) or `OPENAI_API_KEY` (for GPT-4)
+```bash
+export ANTHROPIC_API_KEY=your_key_here
+# or
+export OPENAI_API_KEY=your_key_here
+```
 
-### 4. Open a PR!
+### 4. Optional: Set up GitHub Actions
 
-The review will run automatically on every pull request.
+For automatic PR reviews:
+
+```bash
+open-review setup-github
+```
+
+This creates `.github/workflows/open-review.yml` and requires setting up API keys in GitHub Secrets.
+
+### 5. Review your code!
+
+```bash
+# Review staged changes
+open-review review --diff staged
+
+# Review changes against main
+open-review review --diff main
+
+# Review entire codebase
+open-review review
+```
+
+## GitHub Actions
+
+For automated PR reviews, use the [GitHub Action](https://github.com/elliottlawson/open-review-action):
+
+```yaml
+name: Code Review
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: elliottlawson/open-review-action@v1
+        with:
+          provider: anthropic
+          model: claude-sonnet-4-20250514
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+The Action:
+1. Checks out your code
+2. Runs Open Review to generate findings
+3. Formats output for GitHub
+4. Posts review comments to the PR
 
 ## Configuration
 
@@ -44,9 +101,8 @@ The review will run automatically on every pull request.
 
 ```yaml
 # LLM Settings
-llm:
-  provider: anthropic  # or openai
-  model: claude-sonnet-4-20250514
+provider: anthropic  # or openai, openrouter
+model: claude-sonnet-4-20250514
 
 # Review Behavior
 review:
@@ -55,9 +111,6 @@ review:
   
   # Minimum severity to report: info, warning, or critical
   severity_threshold: info
-  
-  # Auto-resolve comments when issues are fixed
-  auto_resolve: true
   
   # Custom instructions for the reviewer
   custom_instructions: |
@@ -68,27 +121,60 @@ review:
 ignore:
   - "*.lock"
   - "dist/**"
+
+# Template settings (for GitHub output)
+template:
+  suggestions:
+    default_open: false  # collapsed by default
 ```
 
-## Manual Usage
+## CLI Commands
+
+### `open-review review`
+
+Review code locally. No GitHub integration.
 
 ```bash
-# Review a specific PR
-open-review pr owner/repo#123
+# Review current directory
+open-review review
 
-# Dry run (don't post comments)
-open-review pr owner/repo#123 --dry-run --verbose
+# Review staged changes
+open-review review --diff staged
 
-# Override model
-open-review pr owner/repo#123 --model claude-opus-4-20250514
+# Review changes against main
+open-review review --diff main
+
+# Output as JSON for integration with other tools
+open-review review --json
 ```
 
-## Environment Variables
+### `open-review init`
 
-- `GITHUB_TOKEN` - GitHub API token (required)
-- `ANTHROPIC_API_KEY` - For Claude models
-- `OPENAI_API_KEY` - For GPT models
-- `LINEAR_API_KEY` - For Linear integration (optional)
+Initialize Open Review in a project.
+
+```bash
+open-review init
+```
+
+Creates `.open-review.yml` configuration file.
+
+### `open-review setup-github`
+
+Set up GitHub Actions workflow for automatic PR reviews.
+
+```bash
+open-review setup-github
+```
+
+Creates `.github/workflows/open-review.yml` workflow file.
+
+## Output Modes
+
+| Mode | Command | Use Case |
+|------|---------|----------|
+| **Human** (default) | `review` | Terminal output with colors |
+| **JSON** | `review --json` | Integration with other tools/agents |
+| **GitHub** | Used by Action | GitHub-flavored markdown with SVG icons |
 
 ## Convention Files
 
@@ -102,6 +188,26 @@ The reviewer looks for convention files in this order:
 7. `rules.md`
 
 When found, the reviewer enforces these rules and cites specific violations.
+
+## Architecture
+
+Open Review follows a **driver architecture**:
+
+- **Core** (`open-review`): Platform-agnostic review generation
+- **Drivers** (e.g., `open-review-action`): Platform-specific orchestration
+
+See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for detailed architecture documentation.
+
+## Environment Variables
+
+- `ANTHROPIC_API_KEY` - For Claude models
+- `OPENAI_API_KEY` - For GPT models
+
+## Documentation
+
+- [Architecture](./docs/ARCHITECTURE.md) - System design and philosophy
+- [Template System](./docs/TEMPLATE.md) - PR comment format specification
+- [Decisions](./docs/DECISIONS.md) - Architectural decisions and roadmap
 
 ## License
 

@@ -12,8 +12,6 @@
     "templates"
   ],
   "scripts": {
-    "start": "tsx src/cli/index.ts",
-    "review": "tsx src/cli/index.ts pr",
     "build": "tsc",
     "prepare": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"

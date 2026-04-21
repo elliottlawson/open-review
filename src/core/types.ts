@@ -8,22 +8,12 @@
 
 export interface OpenReviewConfig {
   llm: LLMConfig;
-  github: GitHubConfig;
-  linear?: LinearConfig;
   review: ReviewConfig;
 }
 
 export interface LLMConfig {
   provider: 'anthropic' | 'openai' | 'openrouter';
   model: string;
-}
-
-export interface GitHubConfig {
-  token: string;
-}
-
-export interface LinearConfig {
-  apiKey: string;
 }
 
 export interface ReviewConfig {
@@ -35,23 +25,7 @@ export interface ReviewConfig {
   inlineComments?: boolean; // Post inline comments on specific lines (default: true)
 }
 
-// ============================================================================
-// PR Context Types
-// ============================================================================
 
-export interface PRContext {
-  owner: string;
-  repo: string;
-  number: number;
-  title: string;
-  body: string;
-  state: 'open' | 'closed' | 'merged';
-  headSha: string;
-  baseBranch: string;
-  author: string;
-  files: PRFile[];
-  existingComments: ReviewComment[];
-}
 
 export interface PRFile {
   path: string;
@@ -130,49 +104,4 @@ export interface ReviewFinding {
   file?: string;
   line?: number;
   suggestedFix?: string;
-}
-
-// ============================================================================
-// Review State (for tracking across commits)
-// ============================================================================
-
-export interface ReviewState {
-  reviewId: string;
-  prNumber: number;
-  lastCommit: string;
-  createdAt: string;
-  updatedAt: string;
-  findings: {
-    [findingId: string]: {
-      status: 'active' | 'resolved' | 'whitelisted';
-      commentId?: number;
-      resolvedAt?: string;
-      resolvedBy?: 'code_change' | 'user_whitelist' | 'manual';
-    };
-  };
-}
-
-// ============================================================================
-// Tool Types (for the AI agent)
-// ============================================================================
-
-export interface ReviewTools {
-  readFile: (path: string) => Promise<string>;
-  searchCode: (pattern: string, directory?: string) => Promise<SearchResult[]>;
-  getFileContext: (path: string, line: number, context?: number) => Promise<string>;
-  listDirectory: (path: string) => Promise<DirectoryEntry[]>;
-}
-
-export interface SearchResult {
-  file: string;
-  line: number;
-  content: string;
-  matchStart: number;
-  matchEnd: number;
-}
-
-export interface DirectoryEntry {
-  name: string;
-  type: 'file' | 'directory';
-  path: string;
 }
