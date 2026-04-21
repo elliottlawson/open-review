@@ -58,10 +58,18 @@ const FindingSchema = z.object({
   suggestedFix: z.string().optional().describe('Code suggestion if applicable'),
 });
 
+const SectionSummariesSchema = z.object({
+  mustFix: z.string().optional().describe('1-2 sentence summary of what\'s most important about critical issues'),
+  shouldFix: z.string().optional().describe('1-2 sentence summary of what\'s most important about warnings'),
+  questions: z.string().optional().describe('1-2 sentence summary of discussion points'),
+  suggestions: z.string().optional().describe('1-2 sentence summary of suggestions'),
+});
+
 const ReviewResultSchema = z.object({
   summary: z.string().describe('Brief summary of the review'),
   verdict: z.enum(['approve', 'request_changes', 'comment']).describe('Overall recommendation'),
   findings: z.array(FindingSchema).describe('List of findings'),
+  sectionSummaries: SectionSummariesSchema.optional().describe('AI-generated summaries for each section header'),
 });
 
 // ============================================================================
@@ -104,7 +112,17 @@ const BASE_INSTRUCTIONS = `You are an expert code reviewer. Your job is to thoro
 - Acknowledge good patterns you see - positive feedback matters
 - Don't nitpick style if the codebase doesn't have consistent style
 - Focus on what changed, but consider the broader context
-- If you're unsure about something, say so rather than guessing`;
+- If you're unsure about something, say so rather than guessing
+
+## Section Summaries
+
+After listing your findings, generate brief 1-2 sentence summaries for each section that has findings:
+- **mustFix**: What's most critical about these blocking issues (e.g., "Missing strict types and merge conflicts will cause runtime errors")
+- **shouldFix**: What's most important about these warnings (e.g., "3 Laravel convention violations in controller methods")
+- **questions**: What needs discussion (e.g., "Architecture questions about pagination and relationship loading")
+- **suggestions**: What's suggested for improvement (e.g., "2 code organization improvements for better maintainability")
+
+These summaries appear in section headers and should highlight the key themes, not just count issues.`;
 
 // ============================================================================
 // Review Agent
@@ -211,5 +229,6 @@ export async function runReview(
     recommendation: structured.verdict,
     findings,
     tokensUsed: result.usage?.totalTokens || 0,
+    sectionSummaries: structured.sectionSummaries,
   };
 }

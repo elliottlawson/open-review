@@ -87,11 +87,24 @@ export interface LinearIssue {
 // Review Types
 // ============================================================================
 
+export interface SectionSummaries {
+  /** 1-2 sentence summary of critical issues - shown in Must Fix header */
+  mustFix?: string;
+  /** 1-2 sentence summary of warnings - shown in Should Fix header */
+  shouldFix?: string;
+  /** 1-2 sentence summary of discussion points - shown in Questions header */
+  questions?: string;
+  /** 1-2 sentence summary of suggestions - shown in Suggestions header */
+  suggestions?: string;
+}
+
 export interface ReviewResult {
   summary: string;
   findings: ReviewFinding[];
   recommendation: 'approve' | 'request_changes' | 'comment';
   tokensUsed: number;
+  /** AI-generated summaries for each section header */
+  sectionSummaries?: SectionSummaries;
 }
 
 export interface ReviewFinding {

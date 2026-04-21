@@ -7,10 +7,18 @@
 
 import type { ReviewResult, ReviewFinding } from '../core/types.js';
 
+export interface AgentSectionSummaries {
+  mustFix?: string;
+  shouldFix?: string;
+  questions?: string;
+  suggestions?: string;
+}
+
 export interface AgentOutput {
   verdict: 'approve' | 'request_changes' | 'comment';
   summary: string;
   findings: AgentFinding[];
+  sectionSummaries?: AgentSectionSummaries;
   stats: {
     critical: number;
     warnings: number;
@@ -54,6 +62,7 @@ export function formatForAgent(result: ReviewResult): AgentOutput {
     verdict: result.recommendation,
     summary: result.summary,
     findings,
+    sectionSummaries: result.sectionSummaries,
     stats: {
       critical: result.findings.filter(f => f.severity === 'critical').length,
       warnings: result.findings.filter(f => f.severity === 'warning').length,
