@@ -1,10 +1,11 @@
 /**
  * Agent Output Formatter
- * 
- * Token-efficient JSON output for consumption by other agents.
+ *
+ * Token-efficient JSON output for consumption by other agents and CI/CD systems.
+ * Preserves all fields from ReviewFinding for downstream formatters.
  */
 
-import type { ReviewResult } from '../core/types.js';
+import type { ReviewResult, ReviewFinding } from '../core/types.js';
 
 export interface AgentOutput {
   verdict: 'approve' | 'request_changes' | 'comment';
@@ -18,25 +19,35 @@ export interface AgentOutput {
   };
 }
 
+/**
+ * AgentFinding mirrors ReviewFinding structure exactly.
+ * This ensures downstream formatters (like GitHub Action) have access to all fields.
+ */
 export interface AgentFinding {
+  id?: string;
+  type: 'issue' | 'suggestion' | 'praise' | 'question';
   severity: 'critical' | 'warning' | 'info';
   category: string;
+  title: string;
+  description: string;
   file?: string;
   line?: number;
-  message: string;
-  fix?: string;
+  suggestedFix?: string;
 }
 
 export function formatForAgent(result: ReviewResult): AgentOutput {
   const findings: AgentFinding[] = result.findings
     .filter(f => f.type !== 'praise') // Agents don't need praise
     .map(f => ({
+      id: f.id,
+      type: f.type,
       severity: f.severity,
       category: f.category,
+      title: f.title,
+      description: f.description,
       file: f.file,
       line: f.line,
-      message: `${f.title}: ${f.description}`,
-      fix: f.suggestedFix,
+      suggestedFix: f.suggestedFix,
     }));
 
   return {
