@@ -69,6 +69,7 @@ Init options:
 Review options:
   --diff <ref>                Compare against git ref (e.g., main, HEAD~1, staged)
   --json, --agent             Output token-efficient JSON for agent consumption
+  --output, -o <path>         Write output to file instead of stdout
   --provider <name>           LLM provider (anthropic, openai, openrouter)
   --model <name>              LLM model name (e.g., claude-sonnet-4-20250514)
   --api-key <key>             API key for the LLM provider
@@ -93,6 +94,7 @@ Output configuration (.open-review.yml):
     format: human           # "human" | "json"
     colors: auto            # "auto" | "true" | "false"
     timezone: America/New_York  # any IANA timezone string
+    path: ./reviews/latest.json  # optional, write output to file
     sections:
       must_fix:
         enabled: true
@@ -121,6 +123,8 @@ Examples:
   open-review init
   open-review review --diff main
   open-review review --json
+  open-review review --diff main --output ./results.json
+  open-review review --diff main -o ./review.md
   open-review setup-github
 `);
 }

@@ -12,6 +12,7 @@ import { execSync } from 'child_process';
 import { runReview, type ReviewInput } from '../core/agent.js';
 import { formatForHuman } from '../output/human.js';
 import { toJSON } from '../output/agent.js';
+import { renderComment } from '../output/comment-template.js';
 import { loadConfigFromFile, loadConfigFromString, type LoadConfigResult } from '../config/loader.js';
 import type { ResolvedConfig } from '../config/schema.js';
 
@@ -26,6 +27,8 @@ export interface ReviewArgs {
   diff?: string;
   /** Output format */
   format: 'human' | 'json';
+  /** Whether --json flag was explicitly passed */
+  jsonExplicit: boolean;
   /** LLM provider (anthropic, openai, openrouter) */
   provider?: string;
   /** Model name (without provider prefix) */
@@ -42,12 +45,15 @@ export interface ReviewArgs {
   prompt?: string;
   /** Path to config file */
   configPath?: string;
+  /** Output file path (writes to file instead of stdout) */
+  outputPath?: string;
 }
 
 export function parseReviewArgs(args: string[]): ReviewArgs {
   const result: ReviewArgs = {
     path: process.cwd(),
     format: 'human',
+    jsonExplicit: false,
     verbose: false,
   };
 
@@ -56,6 +62,7 @@ export function parseReviewArgs(args: string[]): ReviewArgs {
 
     if (arg === '--json' || arg === '--agent') {
       result.format = 'json';
+      result.jsonExplicit = true;
     } else if (arg === '--diff' || arg === '-d') {
       result.diff = args[++i];
     } else if (arg === '--provider' || arg === '-p') {
@@ -74,6 +81,8 @@ export function parseReviewArgs(args: string[]): ReviewArgs {
       result.instructions = args[++i];
     } else if (arg === '--prompt') {
       result.prompt = args[++i];
+    } else if (arg === '--output' || arg === '-o') {
+      result.outputPath = args[++i];
     } else if (!arg.startsWith('-')) {
       result.path = path.resolve(arg);
     }
@@ -209,6 +218,27 @@ function loadInstructions(
 }
 
 // ============================================================================
+// Output Helpers
+// ============================================================================
+
+type OutputFormat = 'json' | 'markdown' | 'human';
+
+function getFormatFromExtension(filePath: string): OutputFormat {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.json') return 'json';
+  if (ext === '.md' || ext === '.markdown') return 'markdown';
+  return 'human';
+}
+
+function writeOutputToFile(filePath: string, content: string): void {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(filePath, content, 'utf-8');
+}
+
+// ============================================================================
 // Main Handler
 // ============================================================================
 
@@ -334,11 +364,41 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
       reviewInput
     );
 
-    // Output results
-    if (args.format === 'json') {
-      console.log(toJSON(result, true, config.output));
+    // Resolve output path with precedence: CLI > config > stdout
+    const outputPath = args.outputPath ?? config.output.path;
+
+    // Determine output format
+    let outputFormat: OutputFormat;
+    if (args.jsonExplicit) {
+      outputFormat = 'json';
+    } else if (outputPath) {
+      outputFormat = getFormatFromExtension(outputPath);
     } else {
-      console.log(formatForHuman(result, config.output));
+      outputFormat = args.format === 'json' ? 'json' : 'human';
+    }
+
+    // Generate output content
+    let outputContent: string;
+    if (outputFormat === 'json') {
+      outputContent = toJSON(result, true, config.output);
+    } else if (outputFormat === 'markdown') {
+      outputContent = renderComment({ result });
+    } else {
+      outputContent = formatForHuman(result, config.output);
+    }
+
+    // Write output
+    if (outputPath) {
+      const resolvedPath = path.resolve(outputPath);
+      try {
+        writeOutputToFile(resolvedPath, outputContent);
+        console.error(`Review results written to ${outputPath}`);
+      } catch (error) {
+        console.error(`Error writing to ${outputPath}: ${(error as Error).message}`);
+        process.exit(1);
+      }
+    } else {
+      console.log(outputContent);
     }
   } catch (error) {
     console.error(`Error: ${(error as Error).message}`);

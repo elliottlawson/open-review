@@ -40,6 +40,7 @@ const OutputConfigSchema = z.object({
   format: z.enum(['human', 'json']).default('human'),
   colors: z.enum(['auto', 'true', 'false']).default('auto'),
   timezone: z.string().default('America/New_York'),
+  path: z.string().optional(),
   sections: z.object({
     must_fix: SectionConfigSchema.default({ enabled: true, collapse: 'auto' }),
     should_fix: SectionConfigSchema.default({ enabled: true, collapse: 'auto' }),
