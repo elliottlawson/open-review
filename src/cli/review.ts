@@ -276,8 +276,20 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
 
   const config: ResolvedConfig = configResult.config;
 
-  // Resolve API key with precedence: CLI > config > OPEN_REVIEW_API_KEY env var
-  const resolvedApiKey = args.apiKey ?? config.llm.api_key ?? process.env.OPEN_REVIEW_API_KEY;
+  // Resolve API key with precedence: CLI > config (with env interpolation) > OPEN_REVIEW_API_KEY env var
+  function resolveApiKey(cliKey: string | undefined, configKey: string | undefined): string | undefined {
+    if (cliKey) return cliKey;
+    if (configKey) {
+      const match = configKey.match(/^\$\{(.+)\}$/);
+      if (match) {
+        return process.env[match[1]];
+      }
+      return configKey;
+    }
+    return process.env.OPEN_REVIEW_API_KEY;
+  }
+
+  const resolvedApiKey = resolveApiKey(args.apiKey, config.llm.api_key);
 
   // Resolve provider and model with precedence: CLI > config > default
   const provider = args.provider || config.llm.provider;

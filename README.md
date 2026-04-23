@@ -102,7 +102,7 @@ The Action:
 llm:
   provider: anthropic  # or openai, openrouter
   model: claude-sonnet-4-20250514
-  api_key: your-api-key-here  # optional, falls back to OPEN_REVIEW_API_KEY env var
+  api_key: ${OPEN_REVIEW_API_KEY}  # optional, supports env var reference
 
 # Output Settings
 output:
