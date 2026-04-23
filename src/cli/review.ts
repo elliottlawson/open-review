@@ -11,7 +11,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import { runReview, type ReviewInput } from '../core/agent.js';
 import { formatForHuman } from '../output/human.js';
-import { toJSON } from '../output/agent.js';
+import { toJSON, toSkippedJSON } from '../output/agent.js';
 import { renderComment } from '../output/comment-template.js';
 import { loadConfigFromFile, loadConfigFromString, type LoadConfigResult } from '../config/loader.js';
 import type { ResolvedConfig } from '../config/schema.js';
@@ -123,6 +123,11 @@ function matchesGlob(filePath: string, pattern: string): boolean {
 function filterIgnoredFiles(files: string[], ignorePatterns: string[]): string[] {
   if (ignorePatterns.length === 0) return files;
   return files.filter(file => !ignorePatterns.some(pattern => matchesGlob(file, pattern)));
+}
+
+function allFilesMatchSkipPatterns(files: string[], skipPatterns: string[]): boolean {
+  if (skipPatterns.length === 0) return false;
+  return files.every(file => skipPatterns.some(pattern => matchesGlob(file, pattern)));
 }
 
 function getGitDiff(basePath: string, ref?: string, ignorePatterns: string[] = []): { diff: string; files: string[] } | null {
@@ -298,6 +303,17 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
     
     if (!changes) {
       console.log('No changes to review.');
+      process.exit(0);
+    }
+
+    // Check skip_if_only patterns
+    const skipPatterns = config.review.skip_if_only ?? [];
+    if (allFilesMatchSkipPatterns(changes.files, skipPatterns)) {
+      if (args.format === 'json') {
+        console.log(toSkippedJSON(changes.files, true));
+      } else {
+        console.log('Review skipped: changes only affect excluded file types.');
+      }
       process.exit(0);
     }
 

@@ -25,6 +25,9 @@ const ReviewConfigSchema = z.object({
 
   // Flag PRs with empty descriptions
   flag_empty_description: z.boolean().default(true),
+
+  // Skip review entirely if all changed files match these patterns
+  skip_if_only: z.array(z.string()).optional(),
 });
 
 const SectionConfigSchema = z.object({

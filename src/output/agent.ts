@@ -96,3 +96,18 @@ export function toJSON(result: ReviewResult, pretty = false, config?: OutputConf
   const output = formatForAgent(result, config);
   return pretty ? JSON.stringify(output, null, 2) : JSON.stringify(output);
 }
+
+export interface SkippedOutput {
+  skipped: true;
+  reason: string;
+  files: string[];
+}
+
+export function toSkippedJSON(files: string[], pretty = false): string {
+  const output: SkippedOutput = {
+    skipped: true,
+    reason: 'Changes only affect excluded file types',
+    files,
+  };
+  return pretty ? JSON.stringify(output, null, 2) : JSON.stringify(output);
+}
