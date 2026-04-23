@@ -101,31 +101,27 @@ The Action:
 
 ```yaml
 # LLM Settings
-provider: anthropic  # or openai, openrouter
-model: claude-sonnet-4-20250514
+llm:
+  provider: anthropic  # or openai, openrouter
+  model: claude-sonnet-4-20250514
 
 # Review Behavior
 review:
-  # Path to conventions file, or 'auto' to detect
-  conventions: auto
-  
-  # Minimum severity to report: info, warning, or critical
-  severity_threshold: info
-  
-  # Custom instructions for the reviewer
-  custom_instructions: |
+  # Path to conventions/instructions file (auto-detected if omitted)
+  instructions_file: CONVENTIONS.md
+
+  # Additional inline instructions (appended after file if both present)
+  instructions: |
     - Pay special attention to SQL injection
     - All API endpoints must have rate limiting
+
+  # Flag PRs with empty descriptions
+  flag_empty_description: true
 
 # Files to ignore (glob patterns)
 ignore:
   - "*.lock"
   - "dist/**"
-
-# Template settings (for GitHub output)
-template:
-  suggestions:
-    default_open: false  # collapsed by default
 ```
 
 ## CLI Commands
@@ -178,36 +174,35 @@ Creates `.github/workflows/open-review.yml` workflow file.
 
 ## Convention Files
 
-The reviewer looks for convention files in this order:
-1. `CONVENTIONS.md`
-2. `CLAUDE.md`
+The reviewer auto-detects instruction files in this order:
+1. `.open-review/CONVENTIONS.md`
+2. `CONVENTIONS.md`
 3. `.github/CONVENTIONS.md`
-4. `docs/conventions.md`
-5. `docs/CONVENTIONS.md`
-6. `.open-review/rules.md`
-7. `rules.md`
+4. `docs/CONVENTIONS.md`
+5. `CLAUDE.md`
 
-When found, the reviewer enforces these rules and cites specific violations.
+Or specify an explicit path in `.open-review.yml`:
+```yaml
+review:
+  instructions_file: path/to/your/conventions.md
+```
+
+When found, the content is injected into the agent prompt as project-specific instructions.
 
 ## Architecture
 
 Open Review follows a **driver architecture**:
 
-- **Core** (`open-review`): Platform-agnostic review generation
-- **Drivers** (e.g., `open-review-action`): Platform-specific orchestration
+- **Core** (`open-review`): Platform-agnostic review generation. Reads local files, calls LLM, returns structured JSON.
+- **Drivers** (e.g., `open-review-action`): Platform-specific orchestration. Formats and posts reviews.
 
-See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for detailed architecture documentation.
+The core never calls external APIs or posts comments. Platform-specific concerns are handled by drivers.
 
 ## Environment Variables
 
 - `ANTHROPIC_API_KEY` - For Claude models
 - `OPENAI_API_KEY` - For GPT models
-
-## Documentation
-
-- [Architecture](./docs/ARCHITECTURE.md) - System design and philosophy
-- [Template System](./docs/TEMPLATE.md) - PR comment format specification
-- [Decisions](./docs/DECISIONS.md) - Architectural decisions and roadmap
+- `OPENROUTER_API_KEY` - For OpenRouter models
 
 ## License
 

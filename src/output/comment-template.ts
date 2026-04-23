@@ -175,28 +175,6 @@ ${content}
 </details>`;
 }
 
-  // GitHub supports some HTML styling
-  return `<span style="color: ${Colors.muted};">${text}</span>`;
-}
-
-function code(text: string): string {
-  return `\`${text}\``;
-}
-
-function location(file: string, line?: number): string {
-  const loc = line ? `${file}:${line}` : file;
-  return code(loc);
-}
-
-function details(summary: string, content: string, open: boolean = false): string {
-  const openAttr = open ? ' open' : '';
-  return `<details${openAttr}>
-<summary>${summary}</summary>
-
-${content}
-</details>`;
-}
-
 // ============================================================================
 // Section Components
 // ============================================================================

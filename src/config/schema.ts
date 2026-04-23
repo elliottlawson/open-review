@@ -26,27 +26,6 @@ const ReviewConfigSchema = z.object({
   flag_empty_description: z.boolean().default(true),
 });
 
-const TemplateSectionSchema = z.object({
-  enabled: z.boolean().default(true),
-  default_open: z.boolean().optional(),
-});
-
-const FooterConfigSchema = z.object({
-  enabled: z.boolean().default(true),
-  show_iteration_count: z.boolean().default(false),
-  show_token_usage: z.boolean().default(false),
-});
-
-const TemplateConfigSchema = z.object({
-  // Section visibility and behavior
-  context: TemplateSectionSchema.optional(),
-  must_fix: TemplateSectionSchema.optional(),
-  should_fix: TemplateSectionSchema.optional(),
-  suggestions: TemplateSectionSchema.optional(),
-  questions: TemplateSectionSchema.optional(),
-  footer: FooterConfigSchema.optional(),
-});
-
 export const ConfigSchema = z.object({
   llm: LLMConfigSchema.optional(),
   review: ReviewConfigSchema.optional(),

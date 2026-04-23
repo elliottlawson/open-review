@@ -17,12 +17,9 @@ export interface LLMConfig {
 }
 
 export interface ReviewConfig {
-  postComments: boolean;
-  flagEmptyDescription?: boolean; // Flag PRs with no description (default: true)
   instructionsFile?: string; // Path to instructions/conventions file
   instructions?: string; // Inline instructions (appended to file if both present)
-  ignore?: string[]; // Glob patterns to ignore
-  inlineComments?: boolean; // Post inline comments on specific lines (default: true)
+  flagEmptyDescription?: boolean; // Flag PRs with no description (default: true)
 }
 
 
