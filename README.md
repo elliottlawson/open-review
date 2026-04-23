@@ -36,9 +36,7 @@ This creates:
 ### 3. Set up your API key
 
 ```bash
-export ANTHROPIC_API_KEY=your_key_here
-# or
-export OPENAI_API_KEY=your_key_here
+export OPEN_REVIEW_API_KEY=your_key_here
 ```
 
 ### 4. Optional: Set up GitHub Actions
@@ -86,7 +84,7 @@ jobs:
         with:
           provider: anthropic
           model: claude-sonnet-4-20250514
-          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}
 ```
 
 The Action:
@@ -104,25 +102,7 @@ The Action:
 llm:
   provider: anthropic  # or openai, openrouter
   model: claude-sonnet-4-20250514
-
-# Review Behavior
-review:
-  # Path to conventions/instructions file (auto-detected if omitted)
-  instructions_file: CONVENTIONS.md
-
-  # Additional inline instructions (appended after file if both present)
-  instructions: |
-    - Pay special attention to SQL injection
-    - All API endpoints must have rate limiting
-
-  # Flag PRs with empty descriptions
-  flag_empty_description: true
-
-# Files to ignore (glob patterns)
-ignore:
-  - "*.lock"
-  - "dist/**"
-```
+  api_key: ${OPEN_REVIEW_API_KEY}  # optional, supports env var interpolation
 
 ## CLI Commands
 
@@ -200,9 +180,7 @@ The core never calls external APIs or posts comments. Platform-specific concerns
 
 ## Environment Variables
 
-- `ANTHROPIC_API_KEY` - For Claude models
-- `OPENAI_API_KEY` - For GPT models
-- `OPENROUTER_API_KEY` - For OpenRouter models
+- `OPEN_REVIEW_API_KEY` - API key for the configured LLM provider
 
 ## License
 

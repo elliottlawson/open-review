@@ -14,6 +14,7 @@ export interface OpenReviewConfig {
 export interface LLMConfig {
   provider: 'anthropic' | 'openai' | 'openrouter';
   model: string;
+  api_key?: string;
 }
 
 export interface ReviewConfig {
@@ -98,7 +99,7 @@ export interface SectionSummaries {
 export interface ReviewResult {
   summary: string;
   findings: ReviewFinding[];
-  recommendation: 'approve' | 'request_changes' | 'comment';
+  recommendation: 'approve' | 'changes_needed' | 'hold';
   tokensUsed: number;
   /** AI-generated summaries for each section header */
   sectionSummaries?: SectionSummaries;
@@ -106,7 +107,7 @@ export interface ReviewResult {
 
 export interface ReviewFinding {
   id: string;
-  type: 'issue' | 'suggestion' | 'praise' | 'question';
+  type: 'issue' | 'suggestion' | 'question';
   severity: 'critical' | 'warning' | 'info';
   category: string;
   title: string;

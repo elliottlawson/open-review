@@ -19,6 +19,8 @@ export interface ReviewAgentConfig {
   basePath: string;
   /** Model to use (e.g., 'anthropic/claude-sonnet-4-20250514') */
   model: string;
+  /** API key for the LLM provider */
+  apiKey?: string;
   /** Resolved inline instructions text */
   instructions?: string;
   /** Resolved file content (already read by CLI) */
@@ -50,7 +52,7 @@ export interface ReviewInput {
 // ============================================================================
 
 const FindingSchema = z.object({
-  type: z.enum(['issue', 'suggestion', 'praise', 'question']),
+  type: z.enum(['issue', 'suggestion', 'question']),
   severity: z.enum(['critical', 'warning', 'info']),
   category: z.string().describe('Category like "security", "performance", "error-handling", "style"'),
   title: z.string().describe('Short title for the finding'),
@@ -69,7 +71,7 @@ const SectionSummariesSchema = z.object({
 
 const ReviewResultSchema = z.object({
   summary: z.string().describe('Brief summary of the review'),
-  verdict: z.enum(['approve', 'request_changes', 'comment']).describe('Overall recommendation'),
+  verdict: z.enum(['approve', 'changes_needed', 'hold']).describe('Overall recommendation'),
   findings: z.array(FindingSchema).describe('List of findings'),
   sectionSummaries: SectionSummariesSchema.optional().describe('AI-generated summaries for each section header'),
 });
@@ -111,7 +113,7 @@ const BASE_INSTRUCTIONS = `You are an expert code reviewer. Your job is to thoro
 
 - Always include file paths and line numbers when referencing code
 - For suggestions, provide the actual code fix when possible
-- Acknowledge good patterns you see - positive feedback matters
+- Focus on actionable issues, suggestions, and questions. Do not include praise or compliments in your findings.
 - Don't nitpick style if the codebase doesn't have consistent style
 - Focus on what changed, but consider the broader context
 - If you're unsure about something, say so rather than guessing
@@ -161,7 +163,10 @@ export async function createReviewAgent(config: ReviewAgentConfig) {
   const agent = new Agent({
     id: 'open-review-agent',
     name: 'Open Review',
-    model: config.model,
+    model: {
+      id: config.model as `${string}/${string}`,
+      apiKey: config.apiKey,
+    },
     instructions,
     workspace,
     // Note: Memory with observational compression can be added later
@@ -223,7 +228,7 @@ export async function runReview(
     // Fallback: parse from text if structured output failed
     return {
       summary: result.text || 'Review completed',
-      recommendation: 'comment',
+      recommendation: 'hold',
       findings: [],
       tokensUsed: result.usage?.totalTokens || 0,
     };

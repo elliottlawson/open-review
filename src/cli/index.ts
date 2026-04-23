@@ -71,6 +71,7 @@ Review options:
   --json, --agent             Output token-efficient JSON for agent consumption
   --provider <name>           LLM provider (anthropic, openai, openrouter)
   --model <name>              LLM model name (e.g., claude-sonnet-4-20250514)
+  --api-key <key>             API key for the LLM provider
   --instructions-file <path>  Path to instructions/playbook file
   --instructions "<text>"     Inline instructions (overrides config)
   --prompt "<text>"           Ephemeral focus for this review only
@@ -88,8 +89,7 @@ Configuration:
   Run 'open-review init' to create one interactively.
 
 Environment variables:
-  ANTHROPIC_API_KEY     Anthropic API key (for Claude models)
-  OPENAI_API_KEY        OpenAI API key (for GPT models)
+  OPEN_REVIEW_API_KEY     API key for the configured LLM provider
 
 Examples:
   open-review init

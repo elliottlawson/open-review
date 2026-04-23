@@ -187,11 +187,11 @@ interface SectionProps {
 /** ① VERDICT LINE - Always shown, answers "should I merge?" */
 function VerdictSection(result: ReviewResult): string {
   const state = result.recommendation === 'approve' ? 'approved' :
-                result.recommendation === 'request_changes' ? 'changes' : 'hold';
+                result.recommendation === 'changes_needed' ? 'changes' : 'hold';
 
   const config = {
     approved: { icon: Icons.approved, text: 'LGTM', subtext: 'approve and merge', color: Colors.success },
-    changes: { icon: Icons.changes, text: 'Changes requested', subtext: 'do not merge', color: Colors.warning },
+    changes_needed: { icon: Icons.changes, text: 'Changes needed', subtext: 'do not merge', color: Colors.warning },
     hold: { icon: Icons.hold, text: 'Hold', subtext: "let's discuss the approach", color: Colors.purple },
   }[state];
 

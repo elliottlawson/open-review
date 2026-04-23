@@ -40,10 +40,10 @@ function verdictBadge(verdict: string): string {
   switch (verdict) {
     case 'approve':
       return c('green', c('bold', '✓ APPROVE'));
-    case 'request_changes':
-      return c('red', c('bold', '✗ REQUEST CHANGES'));
-    case 'comment':
-      return c('yellow', c('bold', '◆ COMMENT'));
+    case 'changes_needed':
+      return c('red', c('bold', '✗ CHANGES NEEDED'));
+    case 'hold':
+      return c('yellow', c('bold', '◆ HOLD'));
     default:
       return verdict;
   }
@@ -86,7 +86,7 @@ function groupByType(findings: ReviewFinding[]): Map<string, ReviewFinding[]> {
   const groups = new Map<string, ReviewFinding[]>();
   
   for (const finding of findings) {
-    const key = finding.type === 'praise' ? 'praise' : finding.severity;
+    const key = finding.severity;
     if (!groups.has(key)) {
       groups.set(key, []);
     }
@@ -154,19 +154,6 @@ export function formatForHuman(result: ReviewResult): string {
     for (const finding of suggestions) {
       lines.push('');
       lines.push(formatFinding(finding));
-    }
-    lines.push('');
-  }
-  
-  // Praise
-  const praise = groups.get('praise') || [];
-  if (praise.length > 0) {
-    lines.push(c('green', c('bold', `  Good Stuff (${praise.length})`)));
-    lines.push(c('dim', '  ──────────'));
-    for (const finding of praise) {
-      lines.push('');
-      lines.push(`  ${c('green', '✓')} ${c('bold', finding.title)}`);
-      lines.push(`    ${finding.description}`);
     }
     lines.push('');
   }

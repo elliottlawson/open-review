@@ -37,9 +37,7 @@ The authoritative contracts live in committed TypeScript source files:
 
 ## Environment
 
-- `ANTHROPIC_API_KEY` — Required when using Anthropic models
-- `OPENAI_API_KEY` — Required when using OpenAI models
-- `OPENROUTER_API_KEY` — Required when using OpenRouter models
+- `OPEN_REVIEW_API_KEY` — API key for the configured LLM provider
 
 ## Development
 

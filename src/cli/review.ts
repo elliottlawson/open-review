@@ -30,6 +30,8 @@ export interface ReviewArgs {
   provider?: string;
   /** Model name (without provider prefix) */
   model?: string;
+  /** API key for the LLM provider */
+  apiKey?: string;
   /** Show progress */
   verbose: boolean;
   /** Path to instructions/playbook file */
@@ -58,6 +60,8 @@ export function parseReviewArgs(args: string[]): ReviewArgs {
       result.diff = args[++i];
     } else if (arg === '--provider' || arg === '-p') {
       result.provider = args[++i];
+    } else if (arg === '--api-key') {
+      result.apiKey = args[++i];
     } else if (arg === '--model' || arg === '-m') {
       result.model = args[++i];
     } else if (arg === '--config' || arg === '-c') {
@@ -237,20 +241,18 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
 
   const config: ResolvedConfig = configResult.config;
 
+  // Resolve API key with precedence: CLI > config > OPEN_REVIEW_API_KEY env var
+  const resolvedApiKey = args.apiKey ?? config.llm.api_key ?? process.env.OPEN_REVIEW_API_KEY;
+
   // Resolve provider and model with precedence: CLI > config > default
   const provider = args.provider || config.llm.provider;
   const model = args.model || config.llm.model;
   const fullModel = `${provider}/${model}`;
 
-  // Validate API key for resolved provider
-  const keyMap: Record<string, string> = {
-    anthropic: 'ANTHROPIC_API_KEY',
-    openai: 'OPENAI_API_KEY',
-    openrouter: 'OPENROUTER_API_KEY',
-  };
-  const requiredKey = keyMap[provider];
-  if (requiredKey && !process.env[requiredKey]) {
-    console.error(`Error: ${requiredKey} environment variable is required for provider '${provider}'`);
+  // Validate API key
+  if (!resolvedApiKey) {
+    console.error('Error: API key required');
+    console.error('Provide via --api-key, llm.api_key in config, or OPEN_REVIEW_API_KEY environment variable');
     process.exit(1);
   }
 
@@ -312,6 +314,7 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
       {
         basePath: args.path,
         model: fullModel,
+        apiKey: resolvedApiKey,
         instructions: inlineText,
         instructionsFile: fileContent,
         prompt: args.prompt,

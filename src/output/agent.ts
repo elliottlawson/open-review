@@ -15,7 +15,7 @@ export interface AgentSectionSummaries {
 }
 
 export interface AgentOutput {
-  verdict: 'approve' | 'request_changes' | 'comment';
+  verdict: 'approve' | 'changes_needed' | 'hold';
   summary: string;
   findings: AgentFinding[];
   sectionSummaries?: AgentSectionSummaries;
@@ -33,7 +33,7 @@ export interface AgentOutput {
  */
 export interface AgentFinding {
   id?: string;
-  type: 'issue' | 'suggestion' | 'praise' | 'question';
+  type: 'issue' | 'suggestion' | 'question';
   severity: 'critical' | 'warning' | 'info';
   category: string;
   title: string;
@@ -45,7 +45,6 @@ export interface AgentFinding {
 
 export function formatForAgent(result: ReviewResult): AgentOutput {
   const findings: AgentFinding[] = result.findings
-    .filter(f => f.type !== 'praise') // Agents don't need praise
     .map(f => ({
       id: f.id,
       type: f.type,

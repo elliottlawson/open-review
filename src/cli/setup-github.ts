@@ -44,10 +44,6 @@ export function parseSetupGithubArgs(args: string[]): SetupGithubArgs {
 // ============================================================================
 
 function generateWorkflow(provider: string, model: string): string {
-  const apiKeySecret = provider === 'anthropic'
-    ? 'ANTHROPIC_API_KEY'
-    : 'OPENAI_API_KEY';
-
   return `name: Open Review
 
 on:
@@ -70,7 +66,7 @@ jobs:
         with:
           provider: ${provider}
           model: ${model}
-          api_key: \${{ secrets.${apiKeySecret} }}
+          api_key: \${{ secrets.OPEN_REVIEW_API_KEY }}
 `;
 }
 
@@ -117,7 +113,7 @@ function printNextSteps(): void {
 
   console.log('1. Add your API key to GitHub Secrets:');
   console.log('   Go to: Settings → Secrets and variables → Actions');
-  console.log('   Add secret: ANTHROPIC_API_KEY or OPENAI_API_KEY');
+  console.log('   Add secret: OPEN_REVIEW_API_KEY');
 
   console.log('\n2. Push the workflow file:');
   console.log('   git add .github/workflows/open-review.yml');

@@ -13,6 +13,7 @@ import { z } from 'zod';
 const LLMConfigSchema = z.object({
   provider: z.enum(['anthropic', 'openai', 'openrouter']).default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),
+  api_key: z.string().optional(),
 });
 
 const ReviewConfigSchema = z.object({

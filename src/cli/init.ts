@@ -297,11 +297,7 @@ function printNextSteps(options: InitOptions): void {
   console.log('Next steps:\n');
 
   console.log('1. Set your API key environment variable:');
-  if (options.provider === 'anthropic') {
-    console.log('   export ANTHROPIC_API_KEY=your_key_here');
-  } else {
-    console.log('   export OPENAI_API_KEY=your_key_here');
-  }
+  console.log('   export OPEN_REVIEW_API_KEY=your_key_here');
 
   if (!options.instructionsFile) {
     console.log('\n2. (Optional) Create a CONVENTIONS.md file:');
