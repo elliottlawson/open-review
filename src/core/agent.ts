@@ -19,8 +19,12 @@ export interface ReviewAgentConfig {
   basePath: string;
   /** Model to use (e.g., 'anthropic/claude-sonnet-4-20250514') */
   model: string;
-  /** Custom instructions/conventions to follow */
+  /** Resolved inline instructions text */
   instructions?: string;
+  /** Resolved file content (already read by CLI) */
+  instructionsFile?: string;
+  /** Ephemeral focus text */
+  prompt?: string;
   /** Callback for each step (for progress reporting) */
   onStep?: (step: StepInfo) => void;
 }
@@ -126,6 +130,24 @@ These summaries appear in section headers and should highlight the key themes, n
 // Review Agent
 // ============================================================================
 
+function buildSystemPrompt(config: ReviewAgentConfig): string {
+  const parts: string[] = [BASE_INSTRUCTIONS];
+
+  if (config.prompt) {
+    parts.push(`## Review Focus\n\n${config.prompt}`);
+  }
+
+  if (config.instructions) {
+    parts.push(`## Additional Instructions\n\n${config.instructions}`);
+  }
+
+  if (config.instructionsFile) {
+    parts.push(`## Project Playbook\n\n${config.instructionsFile}`);
+  }
+
+  return parts.join('\n\n');
+}
+
 export async function createReviewAgent(config: ReviewAgentConfig) {
   const workspace = new Workspace({
     filesystem: new LocalFilesystem({
@@ -134,9 +156,7 @@ export async function createReviewAgent(config: ReviewAgentConfig) {
     }),
   });
 
-  const instructions = config.instructions 
-    ? `${BASE_INSTRUCTIONS}\n\n## Project-Specific Instructions\n\n${config.instructions}`
-    : BASE_INSTRUCTIONS;
+  const instructions = buildSystemPrompt(config);
 
   const agent = new Agent({
     id: 'open-review-agent',

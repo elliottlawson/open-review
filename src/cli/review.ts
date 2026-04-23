@@ -32,8 +32,12 @@ export interface ReviewArgs {
   model?: string;
   /** Show progress */
   verbose: boolean;
-  /** Custom instructions file */
+  /** Path to instructions/playbook file */
+  instructionsFile?: string;
+  /** Inline instructions text */
   instructions?: string;
+  /** Ephemeral focus for this review only */
+  prompt?: string;
   /** Path to config file */
   configPath?: string;
 }
@@ -60,8 +64,12 @@ export function parseReviewArgs(args: string[]): ReviewArgs {
       result.configPath = args[++i];
     } else if (arg === '--verbose' || arg === '-v') {
       result.verbose = true;
-    } else if (arg === '--instructions' || arg === '-i') {
+    } else if (arg === '--instructions-file') {
+      result.instructionsFile = args[++i];
+    } else if (arg === '--instructions') {
       result.instructions = args[++i];
+    } else if (arg === '--prompt') {
+      result.prompt = args[++i];
     } else if (!arg.startsWith('-')) {
       result.path = path.resolve(arg);
     }
@@ -170,32 +178,30 @@ function getStagedDiff(basePath: string, ignorePatterns: string[] = []): { diff:
 // Load Instructions
 // ============================================================================
 
-function loadInstructions(basePath: string, instructionsPath?: string): string | undefined {
-  // Check explicit path first
-  if (instructionsPath) {
-    const fullPath = path.resolve(basePath, instructionsPath);
+interface ResolvedInstructions {
+  fileContent?: string;
+  inlineText?: string;
+}
+
+function loadInstructions(
+  basePath: string,
+  filePath: string | undefined,
+  inlineText: string | undefined
+): ResolvedInstructions {
+  const result: ResolvedInstructions = {};
+
+  if (filePath) {
+    const fullPath = path.resolve(basePath, filePath);
     if (fs.existsSync(fullPath)) {
-      return fs.readFileSync(fullPath, 'utf-8');
+      result.fileContent = fs.readFileSync(fullPath, 'utf-8');
     }
   }
 
-  // Check for conventions file in common locations
-  const conventionsPaths = [
-    '.open-review/CONVENTIONS.md',
-    'CONVENTIONS.md',
-    '.github/CONVENTIONS.md',
-    'docs/CONVENTIONS.md',
-    'CLAUDE.md', // Common for Claude-based tools
-  ];
-
-  for (const p of conventionsPaths) {
-    const fullPath = path.join(basePath, p);
-    if (fs.existsSync(fullPath)) {
-      return fs.readFileSync(fullPath, 'utf-8');
-    }
+  if (inlineText) {
+    result.inlineText = inlineText;
   }
 
-  return undefined;
+  return result;
 }
 
 // ============================================================================
@@ -287,13 +293,15 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
     }
   }
 
-  // Load instructions
-  const instructions = loadInstructions(args.path, args.instructions);
+  // Resolve instructions with precedence: CLI > config
+  const instructionsFile = args.instructionsFile ?? config.review.instructions_file;
+  const instructionsInline = args.instructions ?? config.review.instructions;
+  const { fileContent, inlineText } = loadInstructions(args.path, instructionsFile, instructionsInline);
 
   if (args.verbose) {
     console.log(`Model: ${fullModel}`);
-    if (instructions) {
-      console.log('Using custom conventions file');
+    if (fileContent || inlineText) {
+      console.log('Using custom instructions');
     }
     console.log('');
   }
@@ -304,7 +312,9 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
       {
         basePath: args.path,
         model: fullModel,
-        instructions,
+        instructions: inlineText,
+        instructionsFile: fileContent,
+        prompt: args.prompt,
         onStep: args.verbose ? (step) => {
           for (const call of step.toolCalls) {
             const argsPreview = JSON.stringify(call.args).slice(0, 60);
