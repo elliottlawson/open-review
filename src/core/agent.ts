@@ -8,11 +8,18 @@
 import { Agent } from '@mastra/core/agent';
 import { Workspace, LocalFilesystem } from '@mastra/core/workspace';
 import { z } from 'zod';
-import type { ReviewResult, ReviewFinding } from './types.js';
+import type { ReviewResult, ReviewFinding, SectionConfig } from './types.js';
 
 // ============================================================================
 // Configuration
 // ============================================================================
+
+export interface SectionVisibilityConfig {
+  must_fix: { enabled: boolean };
+  should_fix: { enabled: boolean };
+  suggestions: { enabled: boolean };
+  questions: { enabled: boolean };
+}
 
 export interface ReviewAgentConfig {
   /** Path to the codebase to review */
@@ -27,6 +34,8 @@ export interface ReviewAgentConfig {
   instructionsFile?: string;
   /** Ephemeral focus text */
   prompt?: string;
+  /** Section visibility configuration */
+  sections?: SectionVisibilityConfig;
   /** Callback for each step (for progress reporting) */
   onStep?: (step: StepInfo) => void;
 }
@@ -134,6 +143,30 @@ These summaries appear in section headers and should highlight the key themes, n
 
 function buildSystemPrompt(config: ReviewAgentConfig): string {
   const parts: string[] = [BASE_INSTRUCTIONS];
+
+  // Add output scope based on section visibility
+  if (config.sections) {
+    const enabledSections: string[] = [];
+    
+    if (config.sections.must_fix.enabled) {
+      enabledSections.push('- Critical issues (severity: critical, type: issue)');
+    }
+    if (config.sections.should_fix.enabled) {
+      enabledSections.push('- Warnings (severity: warning, type: issue)');
+    }
+    if (config.sections.suggestions.enabled) {
+      enabledSections.push('- Suggestions (severity: info, type: suggestion)');
+    }
+    if (config.sections.questions.enabled) {
+      enabledSections.push('- Questions (type: question)');
+    }
+
+    if (enabledSections.length > 0) {
+      parts.push(`## Output Scope\n\nGenerate findings for these categories:\n${enabledSections.join('\n')}`);
+    } else {
+      parts.push(`## Output Scope\n\nNo finding categories are enabled. Only generate a summary and verdict.`);
+    }
+  }
 
   if (config.prompt) {
     parts.push(`## Review Focus\n\n${config.prompt}`);

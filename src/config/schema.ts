@@ -27,11 +27,47 @@ const ReviewConfigSchema = z.object({
   flag_empty_description: z.boolean().default(true),
 });
 
+const SectionConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  collapse: z.enum(['auto', 'always', 'never']).default('auto'),
+});
+
+const VerdictLabelSchema = z.object({
+  label: z.string(),
+});
+
+const OutputConfigSchema = z.object({
+  format: z.enum(['human', 'json']).default('human'),
+  colors: z.enum(['auto', 'true', 'false']).default('auto'),
+  timezone: z.string().default('America/New_York'),
+  sections: z.object({
+    must_fix: SectionConfigSchema.default({ enabled: true, collapse: 'auto' }),
+    should_fix: SectionConfigSchema.default({ enabled: true, collapse: 'auto' }),
+    suggestions: SectionConfigSchema.default({ enabled: true, collapse: 'auto' }),
+    questions: SectionConfigSchema.default({ enabled: true, collapse: 'auto' }),
+  }).default({
+    must_fix: { enabled: true, collapse: 'auto' },
+    should_fix: { enabled: true, collapse: 'auto' },
+    suggestions: { enabled: true, collapse: 'auto' },
+    questions: { enabled: true, collapse: 'auto' },
+  }),
+  verdicts: z.object({
+    approve: VerdictLabelSchema.default({ label: 'LGTM' }),
+    changes_needed: VerdictLabelSchema.default({ label: 'Changes Needed' }),
+    hold: VerdictLabelSchema.default({ label: 'Hold' }),
+  }).default({
+    approve: { label: 'LGTM' },
+    changes_needed: { label: 'Changes Needed' },
+    hold: { label: 'Hold' },
+  }),
+});
+
 export const ConfigSchema = z.object({
   llm: LLMConfigSchema.optional(),
   review: ReviewConfigSchema.optional(),
   // Files/paths to ignore (glob patterns)
   ignore: z.array(z.string()).optional(),
+  output: OutputConfigSchema.optional(),
 });
 
 // ============================================================================
@@ -39,12 +75,16 @@ export const ConfigSchema = z.object({
 // ============================================================================
 
 export type OpenReviewYamlConfig = z.infer<typeof ConfigSchema>;
+export type SectionConfig = z.infer<typeof SectionConfigSchema>;
+export type VerdictLabelConfig = z.infer<typeof VerdictLabelSchema>;
+export type OutputConfig = z.infer<typeof OutputConfigSchema>;
 
 // Fully resolved config with all defaults applied
 export interface ResolvedConfig {
   llm: z.infer<typeof LLMConfigSchema>;
   review: z.infer<typeof ReviewConfigSchema>;
   ignore: string[];
+  output: z.infer<typeof OutputConfigSchema>;
 }
 
 // Apply defaults to partial config
@@ -53,6 +93,7 @@ export function resolveConfig(config: OpenReviewYamlConfig): ResolvedConfig {
     llm: LLMConfigSchema.parse(config.llm ?? {}),
     review: ReviewConfigSchema.parse(config.review ?? {}),
     ignore: config.ignore ?? [],
+    output: OutputConfigSchema.parse(config.output ?? {}),
   };
 }
 

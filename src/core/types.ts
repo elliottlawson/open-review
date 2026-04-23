@@ -9,6 +9,7 @@
 export interface OpenReviewConfig {
   llm: LLMConfig;
   review: ReviewConfig;
+  output?: OutputConfig;
 }
 
 export interface LLMConfig {
@@ -21,6 +22,32 @@ export interface ReviewConfig {
   instructionsFile?: string; // Path to instructions/conventions file
   instructions?: string; // Inline instructions (appended to file if both present)
   flagEmptyDescription?: boolean; // Flag PRs with no description (default: true)
+}
+
+export interface OutputConfig {
+  format: 'human' | 'json';
+  colors: 'auto' | 'true' | 'false';
+  timezone: string;
+  sections: {
+    must_fix: SectionConfig;
+    should_fix: SectionConfig;
+    suggestions: SectionConfig;
+    questions: SectionConfig;
+  };
+  verdicts: {
+    approve: VerdictLabelConfig;
+    changes_needed: VerdictLabelConfig;
+    hold: VerdictLabelConfig;
+  };
+}
+
+export interface SectionConfig {
+  enabled: boolean;
+  collapse: 'auto' | 'always' | 'never';
+}
+
+export interface VerdictLabelConfig {
+  label: string;
 }
 
 

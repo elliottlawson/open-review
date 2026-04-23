@@ -88,6 +88,32 @@ Configuration:
   Place a .open-review.yml file in your repo root to configure behavior.
   Run 'open-review init' to create one interactively.
 
+Output configuration (.open-review.yml):
+  output:
+    format: human           # "human" | "json"
+    colors: auto            # "auto" | "true" | "false"
+    timezone: America/New_York  # any IANA timezone string
+    sections:
+      must_fix:
+        enabled: true
+        collapse: auto      # "auto" | "always" | "never"
+      should_fix:
+        enabled: true
+        collapse: auto
+      suggestions:
+        enabled: true
+        collapse: auto
+      questions:
+        enabled: true
+        collapse: auto
+    verdicts:
+      approve:
+        label: "LGTM"
+      changes_needed:
+        label: "Changes Needed"
+      hold:
+        label: "Hold"
+
 Environment variables:
   OPEN_REVIEW_API_KEY     API key for the configured LLM provider
 

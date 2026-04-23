@@ -8,7 +8,7 @@ The authoritative contracts live in committed TypeScript source files:
 
 | File | Purpose |
 |---|---|
-| `src/core/types.ts` | **Source of truth** for the JSON output contract (`ReviewResult`, `ReviewFinding`) |
+| `src/core/types.ts` | **Source of truth** for the JSON output contract (`ReviewResult`, `ReviewFinding`, `OutputConfig`) |
 | `src/config/schema.ts` | **Source of truth** for `.open-review.yml` schema, defaults, and config precedence |
 | `src/core/agent.ts` | **Source of truth** for agent instructions and how they map to output sections |
 | `src/output/comment-template.ts` | PR comment template specification (GitHub-flavored markdown formatter) |

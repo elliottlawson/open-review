@@ -104,24 +104,31 @@ llm:
   model: claude-sonnet-4-20250514
   api_key: ${OPEN_REVIEW_API_KEY}  # optional, supports env var interpolation
 
-## CLI Commands
-
-### `open-review review`
-
-Review code locally. No GitHub integration.
-
-```bash
-# Review current directory
-open-review review
-
-# Review staged changes
-open-review review --diff staged
-
-# Review changes against main
-open-review review --diff main
-
-# Output as JSON for integration with other tools
-open-review review --json
+# Output Settings
+output:
+  format: human           # "human" | "json"
+  colors: auto            # "auto" | "true" | "false"
+  timezone: America/New_York  # any IANA timezone string
+  sections:
+    must_fix:
+      enabled: true
+      collapse: auto      # "auto" | "always" | "never"
+    should_fix:
+      enabled: true
+      collapse: auto
+    suggestions:
+      enabled: true
+      collapse: auto
+    questions:
+      enabled: true
+      collapse: auto
+  verdicts:
+    approve:
+      label: "LGTM"
+    changes_needed:
+      label: "Changes Needed"
+    hold:
+      label: "Hold"
 ```
 
 ### `open-review init`

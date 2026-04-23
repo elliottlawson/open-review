@@ -5,7 +5,7 @@
  * Preserves all fields from ReviewFinding for downstream formatters.
  */
 
-import type { ReviewResult, ReviewFinding } from '../core/types.js';
+import type { ReviewResult, ReviewFinding, OutputConfig } from '../core/types.js';
 
 export interface AgentSectionSummaries {
   mustFix?: string;
@@ -43,8 +43,29 @@ export interface AgentFinding {
   suggestedFix?: string;
 }
 
-export function formatForAgent(result: ReviewResult): AgentOutput {
-  const findings: AgentFinding[] = result.findings
+export function formatForAgent(result: ReviewResult, config?: OutputConfig): AgentOutput {
+  // Filter findings based on section visibility
+  const filteredFindings = result.findings.filter(f => {
+    // Critical issues (must_fix)
+    if (f.severity === 'critical' && config?.sections?.must_fix?.enabled === false) {
+      return false;
+    }
+    // Warnings (should_fix)
+    if (f.severity === 'warning' && config?.sections?.should_fix?.enabled === false) {
+      return false;
+    }
+    // Suggestions (suggestions)
+    if (f.severity === 'info' && f.type !== 'question' && config?.sections?.suggestions?.enabled === false) {
+      return false;
+    }
+    // Questions (questions)
+    if (f.type === 'question' && config?.sections?.questions?.enabled === false) {
+      return false;
+    }
+    return true;
+  });
+
+  const findings: AgentFinding[] = filteredFindings
     .map(f => ({
       id: f.id,
       type: f.type,
@@ -63,15 +84,15 @@ export function formatForAgent(result: ReviewResult): AgentOutput {
     findings,
     sectionSummaries: result.sectionSummaries,
     stats: {
-      critical: result.findings.filter(f => f.severity === 'critical').length,
-      warnings: result.findings.filter(f => f.severity === 'warning').length,
-      suggestions: result.findings.filter(f => f.severity === 'info').length,
+      critical: filteredFindings.filter(f => f.severity === 'critical').length,
+      warnings: filteredFindings.filter(f => f.severity === 'warning').length,
+      suggestions: filteredFindings.filter(f => f.severity === 'info').length,
       tokens: result.tokensUsed,
     },
   };
 }
 
-export function toJSON(result: ReviewResult, pretty = false): string {
-  const output = formatForAgent(result);
+export function toJSON(result: ReviewResult, pretty = false, config?: OutputConfig): string {
+  const output = formatForAgent(result, config);
   return pretty ? JSON.stringify(output, null, 2) : JSON.stringify(output);
 }

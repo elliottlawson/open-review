@@ -14,7 +14,7 @@
  * 4. GitHub-compatible output is the constraint we design within
  */
 
-import type { ReviewFinding, ReviewResult } from '../core/types.js';
+import type { ReviewFinding, ReviewResult, OutputConfig } from '../core/types.js';
 
 // ============================================================================
 // Configuration Types
@@ -23,8 +23,8 @@ import type { ReviewFinding, ReviewResult } from '../core/types.js';
 export interface SectionConfig {
   /** Whether this section appears in the output */
   enabled: boolean;
-  /** For collapsible sections: default open state */
-  defaultOpen?: boolean;
+  /** Collapse behavior: auto (based on count), always, never */
+  collapse?: 'auto' | 'always' | 'never';
 }
 
 export interface CommentTemplateConfig {
@@ -41,9 +41,9 @@ export interface CommentTemplateConfig {
   shouldFix: SectionConfig;
 
   /** Nice-to-have suggestions (collapsible) */
-  suggestions: SectionConfig & { defaultOpen: boolean };
+  suggestions: SectionConfig;
 
-/** Questions for discussion (shown in 'hold' state) */
+  /** Questions for discussion (shown in 'hold' state) */
   questions: SectionConfig;
 
   /** Additional comments (general feedback, not tied to findings) */
@@ -54,16 +54,22 @@ export interface CommentTemplateConfig {
 
   /** Footer - timestamp and tracking */
   footer: SectionConfig;
+
+  /** Verdict labels */
+  verdicts?: OutputConfig['verdicts'];
+
+  /** Timezone for timestamps */
+  timezone?: string;
 }
 
 /** Default configuration - sensible defaults that work for most teams */
 export const DEFAULT_TEMPLATE_CONFIG: CommentTemplateConfig = {
   verdict: { enabled: true },
   summary: { enabled: true },
-  mustFix: { enabled: true },
-  shouldFix: { enabled: true },
-  suggestions: { enabled: true, defaultOpen: false }, // Collapsed by default
-  questions: { enabled: true },
+  mustFix: { enabled: true, collapse: 'auto' },
+  shouldFix: { enabled: true, collapse: 'auto' },
+  suggestions: { enabled: true, collapse: 'auto' },
+  questions: { enabled: true, collapse: 'auto' },
   additionalComments: { enabled: true },
   feedback: { enabled: false },
   footer: { enabled: true },
@@ -73,9 +79,9 @@ export const DEFAULT_TEMPLATE_CONFIG: CommentTemplateConfig = {
 export const MINIMAL_TEMPLATE_CONFIG: CommentTemplateConfig = {
   verdict: { enabled: true },
   summary: { enabled: true },
-  mustFix: { enabled: true },
+  mustFix: { enabled: true, collapse: 'auto' },
   shouldFix: { enabled: false },
-  suggestions: { enabled: false, defaultOpen: false },
+  suggestions: { enabled: false },
   questions: { enabled: false },
   additionalComments: { enabled: false },
   feedback: { enabled: false },
@@ -86,10 +92,10 @@ export const MINIMAL_TEMPLATE_CONFIG: CommentTemplateConfig = {
 export const VERBOSE_TEMPLATE_CONFIG: CommentTemplateConfig = {
   verdict: { enabled: true },
   summary: { enabled: true },
-  mustFix: { enabled: true },
-  shouldFix: { enabled: true },
-  suggestions: { enabled: true, defaultOpen: true }, // Expanded by default
-  questions: { enabled: true },
+  mustFix: { enabled: true, collapse: 'never' },
+  shouldFix: { enabled: true, collapse: 'never' },
+  suggestions: { enabled: true, collapse: 'never' },
+  questions: { enabled: true, collapse: 'never' },
   additionalComments: { enabled: true },
   feedback: { enabled: true },
   footer: { enabled: true },
@@ -175,6 +181,16 @@ ${content}
 </details>`;
 }
 
+function shouldCollapse(
+  config: 'auto' | 'always' | 'never' | undefined,
+  itemCount: number
+): boolean {
+  if (config === 'always') return true;
+  if (config === 'never') return false;
+  // auto: collapse if more than 3 items
+  return itemCount > 3;
+}
+
 // ============================================================================
 // Section Components
 // ============================================================================
@@ -185,14 +201,14 @@ interface SectionProps {
 }
 
 /** ① VERDICT LINE - Always shown, answers "should I merge?" */
-function VerdictSection(result: ReviewResult): string {
+function VerdictSection(result: ReviewResult, verdicts?: OutputConfig['verdicts']): string {
   const state = result.recommendation === 'approve' ? 'approved' :
                 result.recommendation === 'changes_needed' ? 'changes' : 'hold';
 
   const config = {
-    approved: { icon: Icons.approved, text: 'LGTM', subtext: 'approve and merge', color: Colors.success },
-    changes_needed: { icon: Icons.changes, text: 'Changes needed', subtext: 'do not merge', color: Colors.warning },
-    hold: { icon: Icons.hold, text: 'Hold', subtext: "let's discuss the approach", color: Colors.purple },
+    approved: { icon: Icons.approved, text: verdicts?.approve?.label || 'LGTM', subtext: 'approve and merge', color: Colors.success },
+    changes_needed: { icon: Icons.changes, text: verdicts?.changes_needed?.label || 'Changes needed', subtext: 'do not merge', color: Colors.warning },
+    hold: { icon: Icons.hold, text: verdicts?.hold?.label || 'Hold', subtext: "let's discuss the approach", color: Colors.purple },
   }[state];
 
   return `${config.icon}${bold(config.text)} ${muted(`— ${config.subtext}`)}`;
@@ -238,6 +254,16 @@ function MustFixSection(findings: ReviewFinding[], config: SectionConfig): strin
     return `**${i + 1}. ${f.title}**${loc}`;
   }).join('\n');
 
+  const collapsed = shouldCollapse(config.collapse, critical.length);
+
+  if (collapsed) {
+    return mustFixHeader(Icons.mustFix, 'Must fix') + '\n' + details(
+      `${critical.length} critical issues`,
+      items,
+      true
+    );
+  }
+
   return mustFixHeader(Icons.mustFix, 'Must fix') + '\n' + items;
 }
 
@@ -253,13 +279,23 @@ function ShouldFixSection(findings: ReviewFinding[], config: SectionConfig): str
     return `**- ${f.title}**${loc}`;
   }).join('\n');
 
+  const collapsed = shouldCollapse(config.collapse, warnings.length);
+
+  if (collapsed) {
+    return shouldFixHeader(Icons.shouldFix, 'Should fix') + '\n' + details(
+      `${warnings.length} warnings`,
+      items,
+      true
+    );
+  }
+
   return shouldFixHeader(Icons.shouldFix, 'Should fix') + '\n' + items;
 }
 
-/** ⑤ SUGGESTIONS (COLLAPSIBLE) - Nice-to-have, configurable default state */
+/** ⑤ SUGGESTIONS (COLLAPSIBLE) - Nice-to-have, configurable collapse state */
 function SuggestionsSection(
   findings: ReviewFinding[],
-  config: CommentTemplateConfig['suggestions']
+  config: SectionConfig
 ): string {
   if (!config.enabled) return '';
 
@@ -273,10 +309,12 @@ function SuggestionsSection(
     return `- ${f.title}${loc}`;
   }).join('\n');
 
+  const collapsed = shouldCollapse(config.collapse, suggestions.length);
+
   return '\n' + details(
     `${Icons.suggestion}Suggestions (non-blocking)`,
     items,
-    config.defaultOpen
+    !collapsed
   );
 }
 
@@ -288,6 +326,16 @@ function QuestionsSection(findings: ReviewFinding[], config?: SectionConfig): st
   if (questions.length === 0) return '';
 
   const items = questions.map(f => `**- ${f.title}**`).join('\n');
+
+  const collapsed = shouldCollapse(config?.collapse, questions.length);
+
+  if (collapsed) {
+    return questionsHeader(Icons.question, 'Questions for the team') + '\n' + details(
+      `${questions.length} questions`,
+      items,
+      true
+    );
+  }
 
   return questionsHeader(Icons.question, 'Questions for the team') + '\n' + items;
 }
@@ -309,7 +357,8 @@ function FeedbackSection(config?: SectionConfig): string {
 /** ⑥ FOOTER - Timestamp only, ALWAYS LAST */
 function FooterSection(
   isReReview: boolean,
-  config: CommentTemplateConfig['footer']
+  config: CommentTemplateConfig['footer'],
+  timezone?: string
 ): string {
   if (!config.enabled) return '';
 
@@ -325,6 +374,7 @@ function FooterSection(
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
+      timeZone: timezone || 'America/New_York',
     });
     parts.push(`${Icons.clock}${muted(`Last updated: ${formatted}`)}`);
   }
@@ -370,7 +420,7 @@ export function renderComment(options: RenderCommentOptions): string {
 
   if (state === 'complete') {
     // ② VERDICT LINE (always for complete)
-    parts.push(VerdictSection(result));
+    parts.push(VerdictSection(result, config.verdicts));
 
     // Clean approval - just the verdict
     if (result.recommendation === 'approve' && result.findings.length === 0) {
@@ -400,7 +450,7 @@ export function renderComment(options: RenderCommentOptions): string {
   }
 
   // ⑩ FOOTER (ALWAYS LAST)
-  parts.push(FooterSection(isReReview, config.footer));
+  parts.push(FooterSection(isReReview, config.footer, config.timezone));
 
   return parts.join('');
 }
@@ -460,5 +510,40 @@ export function loadTemplateConfig(
     additionalComments: { ...DEFAULT_TEMPLATE_CONFIG.additionalComments, ...userConfig.additionalComments },
     feedback: { ...DEFAULT_TEMPLATE_CONFIG.feedback, ...userConfig.feedback },
     footer: { ...DEFAULT_TEMPLATE_CONFIG.footer, ...userConfig.footer },
+    verdicts: userConfig.verdicts,
+    timezone: userConfig.timezone,
+  };
+}
+
+/**
+ * Creates a CommentTemplateConfig from OutputConfig
+ */
+export function createTemplateConfigFromOutputConfig(
+  outputConfig: OutputConfig
+): CommentTemplateConfig {
+  return {
+    verdict: { enabled: true },
+    summary: { enabled: true },
+    mustFix: { 
+      enabled: outputConfig.sections.must_fix.enabled,
+      collapse: outputConfig.sections.must_fix.collapse,
+    },
+    shouldFix: { 
+      enabled: outputConfig.sections.should_fix.enabled,
+      collapse: outputConfig.sections.should_fix.collapse,
+    },
+    suggestions: { 
+      enabled: outputConfig.sections.suggestions.enabled,
+      collapse: outputConfig.sections.suggestions.collapse,
+    },
+    questions: { 
+      enabled: outputConfig.sections.questions.enabled,
+      collapse: outputConfig.sections.questions.collapse,
+    },
+    additionalComments: { enabled: true },
+    feedback: { enabled: false },
+    footer: { enabled: true },
+    verdicts: outputConfig.verdicts,
+    timezone: outputConfig.timezone,
   };
 }

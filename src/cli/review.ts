@@ -308,7 +308,7 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
     console.log('');
   }
 
-  // Run the review
+    // Run the review
   try {
     const result = await runReview(
       {
@@ -318,6 +318,12 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
         instructions: inlineText,
         instructionsFile: fileContent,
         prompt: args.prompt,
+        sections: {
+          must_fix: { enabled: config.output.sections.must_fix.enabled },
+          should_fix: { enabled: config.output.sections.should_fix.enabled },
+          suggestions: { enabled: config.output.sections.suggestions.enabled },
+          questions: { enabled: config.output.sections.questions.enabled },
+        },
         onStep: args.verbose ? (step) => {
           for (const call of step.toolCalls) {
             const argsPreview = JSON.stringify(call.args).slice(0, 60);
@@ -330,9 +336,9 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
 
     // Output results
     if (args.format === 'json') {
-      console.log(toJSON(result, true));
+      console.log(toJSON(result, true, config.output));
     } else {
-      console.log(formatForHuman(result));
+      console.log(formatForHuman(result, config.output));
     }
   } catch (error) {
     console.error(`Error: ${(error as Error).message}`);

@@ -4,7 +4,7 @@
  * Terminal-friendly output that mirrors GitHub review style.
  */
 
-import type { ReviewResult, ReviewFinding } from '../core/types.js';
+import type { ReviewResult, ReviewFinding, OutputConfig } from '../core/types.js';
 
 // ANSI colors
 const colors = {
@@ -23,7 +23,17 @@ const colors = {
   bgYellow: '\x1b[43m',
 };
 
+let useColors = true;
+
+function shouldUseColors(config: 'auto' | 'true' | 'false'): boolean {
+  if (config === 'true') return true;
+  if (config === 'false') return false;
+  // auto: check if stdout is TTY
+  return process.stdout.isTTY;
+}
+
 function c(color: keyof typeof colors, text: string): string {
+  if (!useColors) return text;
   return `${colors[color]}${text}${colors.reset}`;
 }
 
@@ -36,14 +46,16 @@ function severityIcon(severity: string): string {
   }
 }
 
-function verdictBadge(verdict: string): string {
+function verdictBadge(verdict: string, labels?: OutputConfig['verdicts']): string {
+  const label = labels?.[verdict as keyof typeof labels]?.label;
+  
   switch (verdict) {
     case 'approve':
-      return c('green', c('bold', '✓ APPROVE'));
+      return c('green', c('bold', `✓ ${label || 'APPROVE'}`));
     case 'changes_needed':
-      return c('red', c('bold', '✗ CHANGES NEEDED'));
+      return c('red', c('bold', `✗ ${label || 'CHANGES NEEDED'}`));
     case 'hold':
-      return c('yellow', c('bold', '◆ HOLD'));
+      return c('yellow', c('bold', `◆ ${label || 'HOLD'}`));
     default:
       return verdict;
   }
@@ -96,7 +108,10 @@ function groupByType(findings: ReviewFinding[]): Map<string, ReviewFinding[]> {
   return groups;
 }
 
-export function formatForHuman(result: ReviewResult): string {
+export function formatForHuman(result: ReviewResult, config?: OutputConfig): string {
+  // Initialize color setting
+  useColors = config ? shouldUseColors(config.colors) : process.stdout.isTTY;
+  
   const lines: string[] = [];
   
   // Header
@@ -107,7 +122,7 @@ export function formatForHuman(result: ReviewResult): string {
   lines.push('');
   
   // Verdict
-  lines.push(`  Verdict: ${verdictBadge(result.recommendation)}`);
+  lines.push(`  Verdict: ${verdictBadge(result.recommendation, config?.verdicts)}`);
   lines.push('');
   
   // Summary
@@ -122,9 +137,10 @@ export function formatForHuman(result: ReviewResult): string {
   // Group findings
   const groups = groupByType(result.findings);
   
-  // Critical issues
+  // Critical issues (must_fix section)
   const critical = groups.get('critical') || [];
-  if (critical.length > 0) {
+  const showCritical = config?.sections?.must_fix?.enabled !== false;
+  if (showCritical && critical.length > 0) {
     lines.push(c('red', c('bold', `  Critical Issues (${critical.length})`)));
     lines.push(c('dim', '  ─────────────────'));
     for (const finding of critical) {
@@ -134,9 +150,10 @@ export function formatForHuman(result: ReviewResult): string {
     lines.push('');
   }
   
-  // Warnings
+  // Warnings (should_fix section)
   const warnings = groups.get('warning') || [];
-  if (warnings.length > 0) {
+  const showWarnings = config?.sections?.should_fix?.enabled !== false;
+  if (showWarnings && warnings.length > 0) {
     lines.push(c('yellow', c('bold', `  Warnings (${warnings.length})`)));
     lines.push(c('dim', '  ────────'));
     for (const finding of warnings) {
@@ -146,12 +163,26 @@ export function formatForHuman(result: ReviewResult): string {
     lines.push('');
   }
   
-  // Suggestions
+  // Suggestions (suggestions section)
   const suggestions = groups.get('info') || [];
-  if (suggestions.length > 0) {
+  const showSuggestions = config?.sections?.suggestions?.enabled !== false;
+  if (showSuggestions && suggestions.length > 0) {
     lines.push(c('blue', c('bold', `  Suggestions (${suggestions.length})`)));
     lines.push(c('dim', '  ───────────'));
     for (const finding of suggestions) {
+      lines.push('');
+      lines.push(formatFinding(finding));
+    }
+    lines.push('');
+  }
+  
+  // Questions (questions section)
+  const questions = result.findings.filter(f => f.type === 'question');
+  const showQuestions = config?.sections?.questions?.enabled !== false;
+  if (showQuestions && questions.length > 0) {
+    lines.push(c('magenta', c('bold', `  Questions (${questions.length})`)));
+    lines.push(c('dim', '  ─────────'));
+    for (const finding of questions) {
       lines.push('');
       lines.push(formatFinding(finding));
     }
