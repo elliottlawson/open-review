@@ -44,28 +44,7 @@ export interface AgentFinding {
 }
 
 export function formatForAgent(result: ReviewResult, config?: OutputConfig): AgentOutput {
-  // Filter findings based on section visibility
-  const filteredFindings = result.findings.filter(f => {
-    // Critical issues (must_fix)
-    if (f.severity === 'critical' && config?.sections?.must_fix?.enabled === false) {
-      return false;
-    }
-    // Warnings (should_fix)
-    if (f.severity === 'warning' && config?.sections?.should_fix?.enabled === false) {
-      return false;
-    }
-    // Suggestions (suggestions)
-    if (f.severity === 'info' && f.type !== 'question' && config?.sections?.suggestions?.enabled === false) {
-      return false;
-    }
-    // Questions (questions)
-    if (f.type === 'question' && config?.sections?.questions?.enabled === false) {
-      return false;
-    }
-    return true;
-  });
-
-  const findings: AgentFinding[] = filteredFindings
+  const findings: AgentFinding[] = result.findings
     .map(f => ({
       id: f.id,
       type: f.type,
@@ -84,9 +63,9 @@ export function formatForAgent(result: ReviewResult, config?: OutputConfig): Age
     findings,
     sectionSummaries: result.sectionSummaries,
     stats: {
-      critical: filteredFindings.filter(f => f.severity === 'critical').length,
-      warnings: filteredFindings.filter(f => f.severity === 'warning').length,
-      suggestions: filteredFindings.filter(f => f.severity === 'info').length,
+      critical: result.findings.filter(f => f.severity === 'critical').length,
+      warnings: result.findings.filter(f => f.severity === 'warning').length,
+      suggestions: result.findings.filter(f => f.severity === 'info').length,
       tokens: result.tokensUsed,
     },
   };

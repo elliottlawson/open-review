@@ -159,22 +159,31 @@ Creates `.github/workflows/open-review.yml` workflow file.
 | **JSON** | `review --json` | Integration with other tools/agents |
 | **GitHub** | Used by Action | GitHub-flavored markdown with SVG icons |
 
-## Convention Files
+## Instructions
 
-The reviewer auto-detects instruction files in this order:
-1. `.open-review/CONVENTIONS.md`
-2. `CONVENTIONS.md`
-3. `.github/CONVENTIONS.md`
-4. `docs/CONVENTIONS.md`
-5. `CLAUDE.md`
+You can provide custom instructions to guide the reviewer's behavior:
 
-Or specify an explicit path in `.open-review.yml`:
+### Via configuration file
+
 ```yaml
 review:
-  instructions_file: path/to/your/conventions.md
+  instructions_file: REVIEWER.md
+  instructions: |
+    Pay special attention to SQL injection vulnerabilities.
 ```
 
-When found, the content is injected into the agent prompt as project-specific instructions.
+- `instructions_file`: Path to a playbook or conventions file
+- `instructions`: Additional inline text (prepended to file content)
+
+### Via CLI
+
+```bash
+open-review review --instructions-file ./security-playbook.md
+open-review review --prompt "Focus on authentication logic"
+```
+
+- `--instructions-file`: Override the config's file path for this run
+- `--prompt`: Add an ephemeral focus that only applies to this review
 
 ## Architecture
 

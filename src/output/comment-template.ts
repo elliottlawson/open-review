@@ -260,7 +260,7 @@ function MustFixSection(findings: ReviewFinding[], config: SectionConfig): strin
     return mustFixHeader(Icons.mustFix, 'Must fix') + '\n' + details(
       `${critical.length} critical issues`,
       items,
-      true
+      false
     );
   }
 
@@ -285,7 +285,7 @@ function ShouldFixSection(findings: ReviewFinding[], config: SectionConfig): str
     return shouldFixHeader(Icons.shouldFix, 'Should fix') + '\n' + details(
       `${warnings.length} warnings`,
       items,
-      true
+      false
     );
   }
 
@@ -333,7 +333,7 @@ function QuestionsSection(findings: ReviewFinding[], config?: SectionConfig): st
     return questionsHeader(Icons.question, 'Questions for the team') + '\n' + details(
       `${questions.length} questions`,
       items,
-      true
+      false
     );
   }
 

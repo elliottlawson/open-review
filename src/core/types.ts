@@ -22,6 +22,7 @@ export interface ReviewConfig {
   instructionsFile?: string; // Path to instructions/conventions file
   instructions?: string; // Inline instructions (appended to file if both present)
   flagEmptyDescription?: boolean; // Flag PRs with no description (default: true)
+  skipIfOnly?: string[]; // Skip review if only these file types changed
 }
 
 export interface OutputConfig {

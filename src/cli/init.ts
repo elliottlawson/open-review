@@ -214,8 +214,35 @@ function generateConfig(options: InitOptions): string {
   lines.push('  #   - Add any additional review instructions here');
   lines.push('  flag_empty_description: true');
   
+  // Output section (commented example)
+  lines.push('');
+  lines.push('# Output Settings');
+  lines.push('# output:');
+  lines.push('#   format: human           # "human" | "json"');
+  lines.push('#   colors: auto            # "auto" | "true" | "false"');
+  lines.push('#   timezone: America/New_York');
+  lines.push('#   path: ./reviews/latest.json');
+  lines.push('#   sections:');
+  lines.push('#     must_fix:');
+  lines.push('#       enabled: true');
+  lines.push('#       collapse: auto      # "auto" | "always" | "never"');
+  lines.push('#     should_fix:');
+  lines.push('#       enabled: true');
+  lines.push('#       collapse: auto');
+  lines.push('#     suggestions:');
+  lines.push('#       enabled: true');
+  lines.push('#       collapse: auto');
+  lines.push('#     questions:');
+  lines.push('#       enabled: true');
+  lines.push('#       collapse: auto');
+  lines.push('#   verdicts:');
+  lines.push('#     approve:');
+  lines.push('#       label: "LGTM"');
+  lines.push('#     changes_needed:');
+  lines.push('#       label: "Changes Needed"');
+  lines.push('#     hold:');
+  lines.push('#       label: "Hold"');
 
-  
   // Ignore patterns
   if (options.ignorePatterns.length > 0) {
     lines.push('');
