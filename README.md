@@ -185,58 +185,78 @@ open-review review --prompt "Focus on authentication logic"
 - `--instructions-file`: Override the config's file path for this run
 - `--prompt`: Add an ephemeral focus that only applies to this review
 
-## CLI Flags for Presentation Settings
+## CLI Flags
 
-All presentation settings from `.open-review.yml` can be overridden via CLI flags. Flags take precedence over config file settings.
+All configuration settings can be overridden via CLI flags. Flags take precedence over `.open-review.yml` config file settings.
+
+**Precedence:** CLI flags > config file > defaults
+
+### Review Options
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--diff <ref>` | string | — | Compare against git ref (`main`, `HEAD~1`, `staged`) |
+| `--json` | boolean | `false` | Output JSON for agent consumption |
+| `--output, -o <path>` | string | — | Write output to file |
+| `--provider <name>` | string | `anthropic` | LLM provider (`anthropic`, `openai`, `openrouter`) |
+| `--model <name>` | string | `claude-sonnet-4-20250514` | LLM model name |
+| `--api-key <key>` | string | — | API key for the LLM provider |
+| `--instructions-file <path>` | string | — | Path to instructions file |
+| `--instructions "<text>"` | string | — | Inline instructions |
+| `--prompt "<text>"` | string | — | Ephemeral focus for this review |
+| `--config <path>` | string | — | Path to config file |
+| `--verbose` | boolean | `false` | Show progress in logs |
 
 ### Output Options
 
-```bash
-# Set timezone for timestamps
-open-review review --timezone Europe/London
-```
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--timezone <tz>` | string | `America/New_York` | IANA timezone for timestamps |
 
 ### Section Visibility
 
-Control which sections appear in the review output:
-
-```bash
-# Hide suggestions section
-open-review review --suggestions false
-
-# Show only must_fix and should_fix
-open-review review --suggestions false --questions false
-```
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--must-fix <bool>` | boolean | `true` | Enable/disable must fix section |
+| `--should-fix <bool>` | boolean | `true` | Enable/disable should fix section |
+| `--suggestions <bool>` | boolean | `true` | Enable/disable suggestions section |
+| `--questions <bool>` | boolean | `true` | Enable/disable questions section |
 
 ### Section Collapse
 
-Control whether sections are collapsed by default:
-
-```bash
-# Always collapse must_fix section
-open-review review --collapse-must-fix always
-
-# Never collapse suggestions
-open-review review --collapse-suggestions never
-```
-
-Valid values: `auto`, `always`, `never`
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--collapse-must-fix <mode>` | enum | `auto` | `auto`, `always`, `never` |
+| `--collapse-should-fix <mode>` | enum | `auto` | `auto`, `always`, `never` |
+| `--collapse-suggestions <mode>` | enum | `auto` | `auto`, `always`, `never` |
+| `--collapse-questions <mode>` | enum | `auto` | `auto`, `always`, `never` |
 
 ### Verdict Labels
 
-Customize the labels for verdict categories:
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--label-approve <text>` | string | `LGTM` | Label for approve verdict |
+| `--label-changes-needed <text>` | string | `Changes Needed` | Label for changes_needed verdict |
+| `--label-hold <text>` | string | `Hold` | Label for hold verdict |
+
+### Examples
 
 ```bash
-# Change approve label
-open-review review --label-approve "Approved"
+# Hide suggestions section
+open-review review --diff main --suggestions=false
 
-# Change all verdict labels
-open-review review --label-approve "Ship It" --label-changes-needed "Fix Required" --label-hold "Blocked"
+# Set timezone
+open-review review --diff main --timezone Europe/London
+
+# Customize verdict labels
+open-review review --diff main --label-approve "Ship It" --label-hold "Needs discussion"
+
+# Collapse all sections
+open-review review --diff main --collapse-must-fix=always --collapse-suggestions=always
+
+# Parameterized (e.g., in a GitHub Action)
+open-review review --diff main --must-fix=${{ inputs.must_fix }} --timezone=${{ inputs.timezone }}
 ```
-
-### Precedence
-
-Configuration precedence: CLI flags > config file > defaults
 
 ## Architecture
 
