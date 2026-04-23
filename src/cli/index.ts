@@ -77,6 +77,24 @@ Review options:
   --instructions "<text>"     Inline instructions (overrides config)
   --prompt "<text>"           Ephemeral focus for this review only
   --config <path>             Path to .open-review.yml config file
+  --timezone <tz>             IANA timezone (e.g., America/New_York, Europe/London)
+  
+  Section visibility (true/false):
+  --must-fix <bool>           Show must_fix section (default: true)
+  --should-fix <bool>         Show should_fix section (default: true)
+  --suggestions <bool>        Show suggestions section (default: true)
+  --questions <bool>          Show questions section (default: true)
+  
+  Section collapse (auto/always/never):
+  --collapse-must-fix <mode>  Collapse must_fix section
+  --collapse-should-fix <mode> Collapse should_fix section
+  --collapse-suggestions <mode> Collapse suggestions section
+  --collapse-questions <mode> Collapse questions section
+  
+  Verdict labels:
+  --label-approve <text>      Label for approve verdict (default: "LGTM")
+  --label-changes-needed <text> Label for changes_needed verdict
+  --label-hold <text>         Label for hold verdict
 
 Setup-github options:
   -y, --quick             Non-interactive setup with defaults

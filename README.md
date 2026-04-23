@@ -185,6 +185,59 @@ open-review review --prompt "Focus on authentication logic"
 - `--instructions-file`: Override the config's file path for this run
 - `--prompt`: Add an ephemeral focus that only applies to this review
 
+## CLI Flags for Presentation Settings
+
+All presentation settings from `.open-review.yml` can be overridden via CLI flags. Flags take precedence over config file settings.
+
+### Output Options
+
+```bash
+# Set timezone for timestamps
+open-review review --timezone Europe/London
+```
+
+### Section Visibility
+
+Control which sections appear in the review output:
+
+```bash
+# Hide suggestions section
+open-review review --suggestions false
+
+# Show only must_fix and should_fix
+open-review review --suggestions false --questions false
+```
+
+### Section Collapse
+
+Control whether sections are collapsed by default:
+
+```bash
+# Always collapse must_fix section
+open-review review --collapse-must-fix always
+
+# Never collapse suggestions
+open-review review --collapse-suggestions never
+```
+
+Valid values: `auto`, `always`, `never`
+
+### Verdict Labels
+
+Customize the labels for verdict categories:
+
+```bash
+# Change approve label
+open-review review --label-approve "Approved"
+
+# Change all verdict labels
+open-review review --label-approve "Ship It" --label-changes-needed "Fix Required" --label-hold "Blocked"
+```
+
+### Precedence
+
+Configuration precedence: CLI flags > config file > defaults
+
 ## Architecture
 
 Open Review follows a **driver architecture**:
