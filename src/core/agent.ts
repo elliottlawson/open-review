@@ -19,8 +19,6 @@ export interface ReviewAgentConfig {
   basePath: string;
   /** Model to use (e.g., 'anthropic/claude-sonnet-4-20250514') */
   model: string;
-  /** Maximum steps the agent can take (default: 100) */
-  maxSteps?: number;
   /** Custom instructions/conventions to follow */
   instructions?: string;
   /** Callback for each step (for progress reporting) */
@@ -180,7 +178,7 @@ export async function runReview(
   let stepNumber = 0;
   
   const result = await agent.generate(prompt, {
-    maxSteps: config.maxSteps ?? 100,
+    maxSteps: 100,
     onStepFinish: (event) => {
       stepNumber++;
       if (config.onStep && event.toolCalls?.length) {

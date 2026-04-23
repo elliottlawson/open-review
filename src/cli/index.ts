@@ -69,8 +69,10 @@ Init options:
 Review options:
   --diff <ref>            Compare against git ref (e.g., main, HEAD~1, staged)
   --json, --agent         Output token-efficient JSON for agent consumption
-  --max-steps <n>         Maximum agent steps (default: 100)
+  --provider <name>       LLM provider (anthropic, openai, openrouter)
+  --model <name>          LLM model name (e.g., claude-sonnet-4-20250514)
   --instructions <file>   Path to conventions/instructions file
+  --config <path>         Path to .open-review.yml config file
 
 Setup-github options:
   -y, --quick             Non-interactive setup with defaults
