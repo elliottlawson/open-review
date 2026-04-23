@@ -7,7 +7,7 @@ AI-powered code review tool for local development and CI/CD. Reviews code using 
 - **Local code review** - Review changes before pushing
 - **CI/CD integration** - GitHub Action for PR reviews
 - **Multiple LLM providers**: Anthropic Claude, OpenAI GPT-4, OpenRouter
-- **Convention enforcement**: Reads your CONVENTIONS.md and enforces project rules
+- **Custom instruction playbooks**: Configure review behavior via instructions files and inline rules
 - **Flexible output**: Terminal, JSON, or GitHub-formatted markdown
 - **Linear integration**: Links related Linear issues (optional)
 
@@ -102,7 +102,7 @@ The Action:
 llm:
   provider: anthropic  # or openai, openrouter
   model: claude-sonnet-4-20250514
-  api_key: ${OPEN_REVIEW_API_KEY}  # optional, supports env var interpolation
+  api_key: your-api-key-here  # optional, falls back to OPEN_REVIEW_API_KEY env var
 
 # Output Settings
 output:
