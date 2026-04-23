@@ -14,11 +14,32 @@ export interface AgentSectionSummaries {
   suggestions?: string;
 }
 
+export interface AgentSectionConfig {
+  enabled: boolean;
+  collapse: 'auto' | 'always' | 'never';
+}
+
+export interface AgentVerdictConfig {
+  label: string;
+}
+
 export interface AgentOutput {
   verdict: 'approve' | 'changes_needed' | 'hold';
   summary: string;
   findings: AgentFinding[];
   sectionSummaries?: AgentSectionSummaries;
+  sections?: {
+    must_fix: AgentSectionConfig;
+    should_fix: AgentSectionConfig;
+    suggestions: AgentSectionConfig;
+    questions: AgentSectionConfig;
+  };
+  verdicts?: {
+    approve: AgentVerdictConfig;
+    changes_needed: AgentVerdictConfig;
+    hold: AgentVerdictConfig;
+  };
+  timezone?: string;
   stats: {
     critical: number;
     warnings: number;
@@ -57,7 +78,7 @@ export function formatForAgent(result: ReviewResult, config?: OutputConfig): Age
       suggestedFix: f.suggestedFix,
     }));
 
-  return {
+  const output: AgentOutput = {
     verdict: result.recommendation,
     summary: result.summary,
     findings,
@@ -69,6 +90,23 @@ export function formatForAgent(result: ReviewResult, config?: OutputConfig): Age
       tokens: result.tokensUsed,
     },
   };
+
+  if (config) {
+    output.sections = {
+      must_fix: { enabled: config.sections.must_fix.enabled, collapse: config.sections.must_fix.collapse },
+      should_fix: { enabled: config.sections.should_fix.enabled, collapse: config.sections.should_fix.collapse },
+      suggestions: { enabled: config.sections.suggestions.enabled, collapse: config.sections.suggestions.collapse },
+      questions: { enabled: config.sections.questions.enabled, collapse: config.sections.questions.collapse },
+    };
+    output.verdicts = {
+      approve: { label: config.verdicts.approve.label },
+      changes_needed: { label: config.verdicts.changes_needed.label },
+      hold: { label: config.verdicts.hold.label },
+    };
+    output.timezone = config.timezone;
+  }
+
+  return output;
 }
 
 export function toJSON(result: ReviewResult, pretty = false, config?: OutputConfig): string {
