@@ -19,7 +19,7 @@ const ReviewConfigSchema = z.object({
   // File containing review instructions/conventions
   instructions_file: z.string().optional(),
 
-  // Additional inline instructions (appended to file if both present)
+  // Additional inline instructions (prepended to file if both present)
   instructions: z.string().optional(),
 
   // Flag PRs with empty descriptions
