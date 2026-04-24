@@ -43,6 +43,8 @@ export interface ReviewArgs {
   instructions?: string;
   /** Ephemeral focus for this review only */
   prompt?: string;
+  /** Ticket context (title, description, acceptance criteria) */
+  ticketContext?: string;
   /** Path to config file */
   configPath?: string;
   /** Output file path (writes to file instead of stdout) */
@@ -101,6 +103,8 @@ export function parseReviewArgs(args: string[]): ReviewArgs {
       result.instructions = args[++i];
     } else if (arg === '--prompt') {
       result.prompt = args[++i];
+    } else if (arg === '--ticket-context') {
+      result.ticketContext = args[++i];
     } else if (arg === '--output' || arg === '-o') {
       result.outputPath = args[++i];
     } else if (arg === '--timezone') {
@@ -393,6 +397,7 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
       target: `Review the changes in this diff. Focus on the modified code.`,
       changedFiles: changes.files,
       diff: changes.diff,
+      ticketContext: args.ticketContext,
     };
     
     if (args.verbose) {
@@ -406,6 +411,7 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
 
     reviewInput = {
       target: `Explore this codebase and review the code quality. Look for bugs, security issues, and areas for improvement.${ignorePrompt}`,
+      ticketContext: args.ticketContext,
     };
     
     if (args.verbose) {

@@ -7,6 +7,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { createInterface } from 'readline';
 import { loadConfigFromFile, type ResolvedConfig } from '../config/loader.js';
 
 // ============================================================================
@@ -43,7 +44,7 @@ export function parseSetupGithubArgs(args: string[]): SetupGithubArgs {
 // Workflow Generation
 // ============================================================================
 
-function generateWorkflow(provider: string, model: string): string {
+function generateWorkflow(): string {
   return `name: Open Review
 
 on:
@@ -56,52 +57,56 @@ permissions:
 
 jobs:
   review:
+    name: AI Code Review
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: elliottlawson/open-review-action@main
+      - name: Open Review
+        uses: elliottlawson/open-review-action@v1
         with:
-          provider: ${provider}
-          model: ${model}
           api_key: \${{ secrets.OPEN_REVIEW_API_KEY }}
 `;
 }
 
 // ============================================================================
-// Interactive Setup (for config detection)
+// Helper Functions
 // ============================================================================
 
-interface ConfirmConfig {
-  provider: string;
-  model: string;
+function prompt(rl: ReturnType<typeof createInterface>, question: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      resolve(answer.trim());
+    });
+  });
 }
 
-async function promptForConfig(fileConfig: ResolvedConfig): Promise<ConfirmConfig> {
-  // For now, use fileConfig directly. Could add interactive prompts later.
-  console.log(`📄 Using config: provider=${fileConfig.llm.provider}, model=${fileConfig.llm.model}`);
-
-  return {
-    provider: fileConfig.llm.provider,
-    model: fileConfig.llm.model,
-  };
+async function promptYesNo(
+  rl: ReturnType<typeof createInterface>,
+  question: string,
+  defaultValue: boolean = true
+): Promise<boolean> {
+  const hint = defaultValue ? '[Y/n]' : '[y/N]';
+  const answer = await prompt(rl, `${question} ${hint}: `);
+  if (!answer) return defaultValue;
+  return answer.toLowerCase().startsWith('y');
 }
 
 // ============================================================================
 // File Writing
 // ============================================================================
 
-function writeWorkflow(cwd: string, config: ConfirmConfig): void {
+function writeWorkflow(cwd: string): void {
   console.log('\n📝 Creating GitHub Action workflow...\n');
 
-  // Workflow file
   const workflowDir = join(cwd, '.github', 'workflows');
   if (!existsSync(workflowDir)) {
     mkdirSync(workflowDir, { recursive: true });
   }
-  const workflowContent = generateWorkflow(config.provider, config.model);
+  const workflowContent = generateWorkflow();
   writeFileSync(join(workflowDir, 'open-review.yml'), workflowContent);
   console.log('   ✓ Created .github/workflows/open-review.yml');
 }
@@ -115,30 +120,16 @@ function printNextSteps(): void {
   console.log('   Go to: Settings → Secrets and variables → Actions');
   console.log('   Add secret: OPEN_REVIEW_API_KEY');
 
-  console.log('\n2. Push the workflow file:');
+  console.log('\n2. Ensure .open-review.yml is committed:');
+  console.log('   git add .open-review.yml');
+
+  console.log('\n3. Push the workflow file:');
   console.log('   git add .github/workflows/open-review.yml');
   console.log('   git commit -m "Add Open Review GitHub Action"');
   console.log('   git push');
 
-  console.log('\n3. Open a PR to see it in action!');
+  console.log('\n4. Open a PR to see it in action!');
   console.log('');
-}
-
-// ============================================================================
-// Quick Setup
-// ============================================================================
-
-async function runQuickSetup(cwd: string, args: SetupGithubArgs, config: ResolvedConfig): Promise<void> {
-  console.log('\n🔧 Open Review GitHub Action Setup\n');
-
-  // Use defaults from config
-  const workflowConfig = {
-    provider: config.llm.provider,
-    model: config.llm.model,
-  };
-
-  writeWorkflow(cwd, workflowConfig);
-  printNextSteps();
 }
 
 // ============================================================================
@@ -151,10 +142,29 @@ export async function runSetupGithub(cwd: string = process.cwd(), args: SetupGit
   const workflowExists = existsSync(workflowPath);
 
   if (workflowExists && !args.force) {
-    console.log('⚠️  GitHub Action workflow already exists');
-    console.log('   Use --force to overwrite existing file.');
-    console.log(`   Path: ${workflowPath}`);
-    process.exit(1);
+    if (args.quick) {
+      console.log('⚠️  GitHub Action workflow already exists');
+      console.log('   Use --force to overwrite existing file.');
+      console.log(`   Path: ${workflowPath}`);
+      process.exit(1);
+    }
+
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    console.log('\n🔧 Open Review GitHub Action Setup\n');
+    console.log('⚠️  Existing workflow detected:');
+    console.log(`   ${workflowPath}`);
+
+    const overwrite = await promptYesNo(rl, 'Overwrite existing workflow?', false);
+    rl.close();
+
+    if (!overwrite) {
+      console.log('\nSetup cancelled.');
+      return;
+    }
   }
 
   // Load config
@@ -168,11 +178,13 @@ export async function runSetupGithub(cwd: string = process.cwd(), args: SetupGit
     process.exit(1);
   }
 
-  // Quick mode or interactive
-  if (args.quick) {
-    await runQuickSetup(cwd, args, fileConfig);
-  } else {
-    // For now, quick setup is the same. Could add interactive options later.
-    await runQuickSetup(cwd, args, fileConfig);
+  if (!args.quick) {
+    console.log('\n🔧 Open Review GitHub Action Setup\n');
+    console.log(`📄 Using config: provider=${fileConfig.llm.provider}, model=${fileConfig.llm.model}`);
+    console.log('\nThis will create .github/workflows/open-review.yml');
+    console.log('The workflow uses your existing .open-review.yml for configuration.');
   }
+
+  writeWorkflow(cwd);
+  printNextSteps();
 }

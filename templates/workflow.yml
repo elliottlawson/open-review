@@ -16,24 +16,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          fetch-depth: 0
 
-      - name: Install Open Review
-        run: |
-          git clone --depth 1 https://github.com/elliottlawson/open-review.git /tmp/open-review
-          cd /tmp/open-review
-          npm install
-          npm link
-
-      - name: Run Review
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPEN_REVIEW_API_KEY: ${{ secrets.OPEN_REVIEW_API_KEY }}
-          # Uncomment if using Linear integration:
-          # LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
-        run: |
-          open-review pr ${{ github.repository }}#${{ github.event.pull_request.number }}
+      - name: Open Review
+        uses: elliottlawson/open-review-action@v1
+        with:
+          api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}

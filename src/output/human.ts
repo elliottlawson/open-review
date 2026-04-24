@@ -189,10 +189,20 @@ export function formatForHuman(result: ReviewResult, config?: OutputConfig): str
     lines.push('');
   }
   
+  // Discipline warnings
+  if (result.disciplineWarnings && result.disciplineWarnings.length > 0) {
+    lines.push(c('yellow', c('bold', '  ⚠ Review Discipline')));
+    lines.push(c('dim', '  ────────────────────'));
+    for (const warning of result.disciplineWarnings) {
+      lines.push(`  ${c('yellow', '•')} ${warning}`);
+    }
+    lines.push('');
+  }
+
   // Footer
   lines.push(c('dim', '───────────────────────────────────────────────────────────────'));
   lines.push(c('dim', `  Tokens used: ${result.tokensUsed.toLocaleString()}`));
   lines.push('');
-  
+
   return lines.join('\n');
 }

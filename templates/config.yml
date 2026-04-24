@@ -3,7 +3,7 @@
 
 # LLM Settings
 llm:
-  # Provider: anthropic or openai
+  # Provider: anthropic, openai, or openrouter
   provider: anthropic
   
   # Model to use for reviews
@@ -14,17 +14,45 @@ review:
   # Path to your conventions/instructions file
   # instructions_file: CONVENTIONS.md
   
-  # Inline instructions (appended to file if both present)
+  # Inline instructions (prepended to file content if both present)
   # instructions: |
   #   - Use PSR-12 coding standards
   #   - All public methods must have docblocks
   
   # Flag PRs with no description
   flag_empty_description: true
+  
+  # Skip review entirely if all changed files match these patterns
+  # skip_if_only:
+  #   - "*.lock"
+  #   - "*.md"
 
-# Linear Integration (optional)
-# linear:
-#   enabled: true
+# Output Settings
+# output:
+#   format: human           # "human" | "json"
+#   colors: auto            # "auto" | "true" | "false"
+#   timezone: America/New_York
+#   path: ./reviews/latest.json
+#   sections:
+#     must_fix:
+#       enabled: true
+#       collapse: auto      # "auto" | "always" | "never"
+#     should_fix:
+#       enabled: true
+#       collapse: auto
+#     suggestions:
+#       enabled: true
+#       collapse: auto
+#     questions:
+#       enabled: true
+#       collapse: auto
+#   verdicts:
+#     approve:
+#       label: "LGTM"
+#     changes_needed:
+#       label: "Changes Needed"
+#     hold:
+#       label: "Hold"
 
 # Files/patterns to ignore (glob patterns)
 # These are skipped during review

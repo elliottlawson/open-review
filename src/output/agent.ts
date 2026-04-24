@@ -46,6 +46,7 @@ export interface AgentOutput {
     suggestions: number;
     tokens: number;
   };
+  disciplineWarnings?: string[];
 }
 
 /**
@@ -104,6 +105,10 @@ export function formatForAgent(result: ReviewResult, config?: OutputConfig): Age
       hold: { label: config.verdicts.hold.label },
     };
     output.timezone = config.timezone;
+  }
+
+  if (result.disciplineWarnings) {
+    output.disciplineWarnings = result.disciplineWarnings;
   }
 
   return output;

@@ -131,6 +131,8 @@ export interface ReviewResult {
   tokensUsed: number;
   /** AI-generated summaries for each section header */
   sectionSummaries?: SectionSummaries;
+  /** Warnings from the discipline validator (non-blocking) */
+  disciplineWarnings?: string[];
 }
 
 export interface ReviewFinding {
@@ -143,4 +145,17 @@ export interface ReviewFinding {
   file?: string;
   line?: number;
   suggestedFix?: string;
+}
+
+export interface ReviewInput {
+  /** What to review - can be file paths, a diff description, or general guidance */
+  target: string;
+  /** Additional context (e.g., PR description, ticket info) */
+  context?: string;
+  /** Ticket context: title, description, acceptance criteria. Passed explicitly by the user; not auto-fetched. */
+  ticketContext?: string;
+  /** Files that changed (helps focus the review) */
+  changedFiles?: string[];
+  /** The actual diff content */
+  diff?: string;
 }
