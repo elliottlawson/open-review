@@ -1,63 +1,27 @@
 # Open Review Configuration
 # https://github.com/elliottlawson/open-review
 
-# LLM Settings
-llm:
-  # Provider: anthropic, openai, or openrouter
-  provider: anthropic
-  
-  # Model to use for reviews
-  model: claude-sonnet-4-20250514
+version: "1.0"
 
-# Review Behavior
+# Review Settings
 review:
-  # Path to your conventions/instructions file
-  # instructions_file: CONVENTIONS.md
-  
-  # Inline instructions (prepended to file content if both present)
-  # instructions: |
-  #   - Use PSR-12 coding standards
-  #   - All public methods must have docblocks
-  
-  # Flag PRs with no description
-  flag_empty_description: true
-  
-  # Skip review entirely if all changed files match these patterns
-  # skip_if_only:
-  #   - "*.lock"
-  #   - "*.md"
+  # Methodology: 'default' (built-in) or path to custom file
+  methodology: default
 
-# Output Settings
+  # Presets: 'auto' (detect from project files) or list of preset names
+  # presets: [laravel, react]
+
+  # Conventions: 'auto' (discover from codebase), path to file, or inline text
+  # conventions: ./docs/standards.md
+  # conventions: "We use HasRealm for tenancy. Controllers are CRUD-only."
+
+# LLM Settings (optional)
+# llm:
+#   provider: anthropic        # anthropic, openai, or openrouter
+#   model: claude-sonnet-4-20250514
+
+# Output Settings (optional)
 # output:
-#   format: human           # "human" | "json"
-#   colors: auto            # "auto" | "true" | "false"
+#   format: human              # "human" | "json"
+#   colors: auto               # "auto" | "true" | "false"
 #   timezone: America/New_York
-#   path: ./reviews/latest.json
-#   sections:
-#     must_fix:
-#       enabled: true
-#       collapse: auto      # "auto" | "always" | "never"
-#     should_fix:
-#       enabled: true
-#       collapse: auto
-#     suggestions:
-#       enabled: true
-#       collapse: auto
-#     questions:
-#       enabled: true
-#       collapse: auto
-#   verdicts:
-#     approve:
-#       label: "LGTM"
-#     changes_needed:
-#       label: "Changes Needed"
-#     hold:
-#       label: "Hold"
-
-# Files/patterns to ignore (glob patterns)
-# These are skipped during review
-ignore:
-  - "*.lock"
-  - "node_modules/**"
-  - "vendor/**"
-  - "dist/**"

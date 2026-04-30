@@ -120,8 +120,8 @@ function printNextSteps(): void {
   console.log('   Go to: Settings → Secrets and variables → Actions');
   console.log('   Add secret: OPEN_REVIEW_API_KEY');
 
-  console.log('\n2. Ensure .open-review.yml is committed:');
-  console.log('   git add .open-review.yml');
+  console.log('\n2. Ensure .open-review/config.yml is committed:');
+  console.log('   git add .open-review/config.yml');
 
   console.log('\n3. Push the workflow file:');
   console.log('   git add .github/workflows/open-review.yml');
@@ -182,7 +182,7 @@ export async function runSetupGithub(cwd: string = process.cwd(), args: SetupGit
     console.log('\n🔧 Open Review GitHub Action Setup\n');
     console.log(`📄 Using config: provider=${fileConfig.llm.provider}, model=${fileConfig.llm.model}`);
     console.log('\nThis will create .github/workflows/open-review.yml');
-    console.log('The workflow uses your existing .open-review.yml for configuration.');
+    console.log('The workflow uses your existing .open-review/config.yml for configuration.');
   }
 
   writeWorkflow(cwd);

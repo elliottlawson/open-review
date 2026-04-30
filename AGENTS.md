@@ -9,9 +9,10 @@ The authoritative contracts live in committed TypeScript source files:
 | File | Purpose |
 |---|---|
 | `src/core/types.ts` | **Source of truth** for the JSON output contract (`ReviewResult`, `ReviewFinding`, `OutputConfig`) |
-| `src/config/schema.ts` | **Source of truth** for `.open-review.yml` schema, defaults, and config precedence |
+| `src/config/schema.ts` | **Source of truth** for `.open-review/config.yml` schema, defaults, and config precedence |
 | `src/core/agent.ts` | **Source of truth** for agent instructions and how they map to output sections |
 | `src/output/comment-template.ts` | PR comment template specification (GitHub-flavored markdown formatter) |
+| `methodology/core.md` | **Source of truth** for the review methodology (6-step reasoning process) |
 
 > **Rule**: When changing behavior, document the intended contract before modifying committed source. Update specs, then diff against the source of truth files above and apply changes. This prevents drift between intent and implementation.
 
@@ -21,9 +22,13 @@ The authoritative contracts live in committed TypeScript source files:
 |---|---|
 | `src/core/agent.ts` | Mastra-based review agent, prompt construction, structured output |
 | `src/core/types.ts` | Shared TypeScript types (`ReviewResult`, `ReviewFinding`, config types) |
-| `src/config/schema.ts` | Zod schema for `.open-review.yml` validation |
+| `src/config/schema.ts` | Zod schema for `.open-review/config.yml` validation |
 | `src/config/loader.ts` | Config file discovery and loading |
+| `src/core/methodology-loader.ts` | Loads methodology from built-in or local files |
+| `src/core/preset-loader.ts` | Loads framework presets |
+| `src/core/framework-detector.ts` | Auto-detects frameworks from project files |
 | `src/cli/review.ts` | Local review command (`open-review review`) |
+| `src/cli/publish.ts` | Publish command (copies methodology for customization) |
 | `src/output/human.ts` | Terminal formatter (ANSI colors) |
 | `src/output/agent.ts` | JSON formatter (`--json` flag output) |
 | `src/output/comment-template.ts` | GitHub markdown formatter |
@@ -33,7 +38,8 @@ The authoritative contracts live in committed TypeScript source files:
 - **Local-first**: Core never calls external APIs. Reads files from local filesystem only.
 - **Platform-agnostic**: No GitHub, GitLab, or platform-specific logic in core.
 - **Structured output**: AI produces `ReviewResult` JSON. Formatters transform it for display.
-- **Config-driven**: Behavior controlled by `.open-review.yml` and CLI flags.
+- **Config-driven**: Behavior controlled by `.open-review/config.yml` and CLI flags.
+- **Methodology-first**: The reasoning process is the product, not the tool.
 
 ## Environment
 
@@ -53,8 +59,10 @@ npx tsx src/cli/index.ts review --diff main --json
 ```
 Core (open-review)
 ├─ Reads code from local filesystem
-├─ Loads config from .open-review.yml
-├─ Builds prompt from agent spec + user conventions
+├─ Loads config from .open-review/config.yml
+├─ Loads methodology from methodology/ (built-in or local)
+├─ Loads presets from presets/ (built-in or local)
+├─ Builds prompt: methodology + presets + conventions + output discipline
 ├─ Calls LLM (Mastra agent with structured output)
 └─ Returns: ReviewResult JSON
 

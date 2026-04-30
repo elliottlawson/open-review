@@ -2,26 +2,18 @@
  * Prompt Composition Engine
  *
  * Builds the system prompt as semantic layers rather than a flat string.
+ * Methodology is loaded at runtime from markdown files (built-in or local).
  * Project conventions are spliced at the semantic center (after ecosystem,
  * before security) so they augment — not override — the core methodology.
  */
 
-import {
-  UNDERSTAND_MISSION,
-  EVALUATE_APPROACH,
-  ASSESS_ECOSYSTEM,
-  CHECK_PROJECT_CONVENTIONS,
-  SECURITY_REVIEW,
-  CODE_QUALITY,
-  COMMUNICATION_STYLE,
-} from './methodology.js';
-import { OUTPUT_FORMAT } from './output-format.js';
+import { loadMethodology, type MethodologyContent } from '../methodology-loader.js';
 
 export interface PromptCompositionConfig {
   /** Project conventions — spliced into methodology step 4 */
-  instructions?: string;
-  /** Project playbook file content — spliced into methodology step 4 */
-  instructionsFile?: string;
+  conventions?: string;
+  /** Preset content — spliced into methodology step 3 */
+  presets?: string[];
   /** Which finding categories the agent should generate */
   sections?: {
     must_fix: { enabled: boolean };
@@ -31,60 +23,61 @@ export interface PromptCompositionConfig {
   };
   /** Ephemeral focus for this review */
   prompt?: string;
+  /** Working directory for loading methodology */
+  cwd?: string;
+  /** Custom methodology path from config */
+  methodologyPath?: string;
 }
 
-const SPLICE_MARKER = '[SPLICE: PROJECT_CONVENTIONS_GO_HERE]';
-
-function buildProjectConventionsSection(
-  instructions?: string,
-  instructionsFile?: string
+function spliceConventionsIntoMethodology(
+  methodology: string,
+  conventions?: string
 ): string {
-  const parts: string[] = [];
-
-  if (instructions) {
-    parts.push(instructions);
+  if (!conventions) {
+    return methodology.replace(
+      '<!-- Presets are spliced here by the harness when framework presets are configured -->',
+      'No project-specific conventions were provided. Evaluate against general best practices.'
+    );
   }
 
-  if (instructionsFile) {
-    parts.push(instructionsFile);
-  }
-
-  if (parts.length === 0) {
-    return '';
-  }
-
-  return parts.join('\n\n');
+  return methodology.replace(
+    '<!-- Presets are spliced here by the harness when framework presets are configured -->',
+    conventions
+  );
 }
 
-function buildMethodology(instructions?: string, instructionsFile?: string): string {
-  const conventions = buildProjectConventionsSection(instructions, instructionsFile);
-
-  const methodologyParts = [
-    UNDERSTAND_MISSION,
-    EVALUATE_APPROACH,
-    ASSESS_ECOSYSTEM,
-    CHECK_PROJECT_CONVENTIONS,
-    SECURITY_REVIEW,
-    CODE_QUALITY,
-    COMMUNICATION_STYLE,
-  ];
-
-  if (conventions) {
-    // Replace the splice marker with the actual conventions
-    const methodologyWithConventions = methodologyParts.map((part) =>
-      part.includes(SPLICE_MARKER) ? part.replace(SPLICE_MARKER, conventions) : part
-    );
-    return methodologyWithConventions.join('\n\n');
+function splicePresetsIntoMethodology(
+  methodology: string,
+  presets?: string[]
+): string {
+  if (!presets || presets.length === 0) {
+    return methodology;
   }
 
-  // No conventions provided — remove the splice marker entirely
-  const methodologyWithoutMarker = methodologyParts.map((part) =>
-    part.includes(SPLICE_MARKER)
-      ? part.replace(SPLICE_MARKER, 'No project-specific conventions were provided. Evaluate against general best practices.')
-      : part
+  const presetSection = presets.join('\n\n---\n\n');
+  return methodology.replace(
+    '<!-- Presets are spliced here by the harness when framework presets are configured -->',
+    presetSection
+  );
+}
+
+function buildMethodology(config: PromptCompositionConfig): string {
+  const methodology = loadMethodology(
+    config.cwd ?? process.cwd(),
+    config.methodologyPath
   );
 
-  return methodologyWithoutMarker.join('\n\n');
+  let core = methodology.core;
+
+  // Splice presets into step 3
+  if (config.presets && config.presets.length > 0) {
+    core = splicePresetsIntoMethodology(core, config.presets);
+  }
+
+  // Splice conventions into step 4
+  core = spliceConventionsIntoMethodology(core, config.conventions);
+
+  return core;
 }
 
 function buildOutputScope(
@@ -115,23 +108,31 @@ function buildOutputScope(
 }
 
 export function buildSystemPrompt(config: PromptCompositionConfig): string {
+  const methodology = loadMethodology(
+    config.cwd ?? process.cwd(),
+    config.methodologyPath
+  );
+
   const parts: string[] = [
     `You are an expert code reviewer. Your job is to thoroughly review code changes and provide actionable, constructive feedback.`,
   ];
 
-  // Layer 0: Methodology
-  parts.push(buildMethodology(config.instructions, config.instructionsFile));
+  // Layer 0: Methodology (with presets and conventions spliced in)
+  parts.push(buildMethodology(config));
 
   // Layer 1: Output Format & Discipline
-  parts.push(OUTPUT_FORMAT);
+  parts.push(`## Output Format\n\n${methodology.outputDiscipline}`);
 
-  // Layer 2: Output Scope
+  // Layer 2: Communication Style
+  parts.push(`## Communication Style\n\n${methodology.communicationStyle}`);
+
+  // Layer 3: Output Scope
   const outputScope = buildOutputScope(config.sections);
   if (outputScope) {
     parts.push(outputScope);
   }
 
-  // Layer 3: Ephemeral Focus
+  // Layer 4: Ephemeral Focus
   if (config.prompt) {
     parts.push(`## Review Focus\n\n${config.prompt}`);
   }
