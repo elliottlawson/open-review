@@ -7,8 +7,9 @@
 // ============================================================================
 
 export interface OpenReviewConfig {
-  llm: LLMConfig;
+  version: string;
   review: ReviewConfig;
+  llm?: LLMConfig;
   output?: OutputConfig;
 }
 
@@ -19,10 +20,9 @@ export interface LLMConfig {
 }
 
 export interface ReviewConfig {
-  instructionsFile?: string; // Path to instructions/conventions file
-  instructions?: string; // Inline instructions (appended to file if both present)
-  flagEmptyDescription?: boolean; // Flag PRs with no description (default: true)
-  skipIfOnly?: string[]; // Skip review if only these file types changed
+  methodology: string; // 'default' or path to custom methodology
+  presets: 'auto' | string[]; // 'auto' or list of preset names
+  conventions: string; // 'auto', path to file, or inline text
 }
 
 export interface OutputConfig {

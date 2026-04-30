@@ -1,7 +1,7 @@
 /**
  * Configuration Loader
- * 
- * Loads and validates .open-review.yml from the current directory or repo
+ *
+ * Loads and validates .open-review/config.yml from the current directory or repo
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -13,12 +13,7 @@ import { ConfigSchema, resolveConfig, DEFAULT_CONFIG, type ResolvedConfig } from
 // Constants
 // ============================================================================
 
-const CONFIG_FILENAMES = [
-  '.open-review.yml',
-  '.open-review.yaml',
-  'open-review.yml',
-  'open-review.yaml',
-];
+const CONFIG_PATH = '.open-review/config.yml';
 
 // ============================================================================
 // Loader
@@ -34,28 +29,18 @@ export interface LoadConfigResult {
  * Load config from filesystem (for CLI usage)
  */
 export function loadConfigFromFile(dir: string = process.cwd()): LoadConfigResult {
-  // Find config file
-  let configPath: string | null = null;
-  let rawContent: string | null = null;
-  
-  for (const filename of CONFIG_FILENAMES) {
-    const path = join(dir, filename);
-    if (existsSync(path)) {
-      configPath = path;
-      rawContent = readFileSync(path, 'utf-8');
-      break;
-    }
-  }
-  
-  // No config file found - use defaults
-  if (!configPath || !rawContent) {
+  const configPath = join(dir, CONFIG_PATH);
+
+  if (!existsSync(configPath)) {
     return {
       config: DEFAULT_CONFIG,
       configPath: null,
       errors: [],
     };
   }
-  
+
+  const rawContent = readFileSync(configPath, 'utf-8');
+
   // Parse YAML
   let parsed: unknown;
   try {
@@ -67,7 +52,7 @@ export function loadConfigFromFile(dir: string = process.cwd()): LoadConfigResul
       errors: [`Failed to parse ${configPath}: ${(error as Error).message}`],
     };
   }
-  
+
   // Handle empty file
   if (parsed === null || parsed === undefined) {
     return {
@@ -76,12 +61,12 @@ export function loadConfigFromFile(dir: string = process.cwd()): LoadConfigResul
       errors: [],
     };
   }
-  
+
   // Validate against schema
   const result = ConfigSchema.safeParse(parsed);
-  
+
   if (!result.success) {
-    const errors = result.error.issues.map(e => 
+    const errors = result.error.issues.map(e =>
       `${e.path.join('.')}: ${e.message}`
     );
     return {
@@ -90,7 +75,7 @@ export function loadConfigFromFile(dir: string = process.cwd()): LoadConfigResul
       errors,
     };
   }
-  
+
   return {
     config: resolveConfig(result.data),
     configPath,
@@ -113,7 +98,7 @@ export function loadConfigFromString(content: string): LoadConfigResult {
       errors: [`Failed to parse config: ${(error as Error).message}`],
     };
   }
-  
+
   // Handle empty content
   if (parsed === null || parsed === undefined) {
     return {
@@ -122,12 +107,12 @@ export function loadConfigFromString(content: string): LoadConfigResult {
       errors: [],
     };
   }
-  
+
   // Validate against schema
   const result = ConfigSchema.safeParse(parsed);
-  
+
   if (!result.success) {
-    const errors = result.error.issues.map(e => 
+    const errors = result.error.issues.map(e =>
       `${e.path.join('.')}: ${e.message}`
     );
     return {
@@ -136,7 +121,7 @@ export function loadConfigFromString(content: string): LoadConfigResult {
       errors,
     };
   }
-  
+
   return {
     config: resolveConfig(result.data),
     configPath: null,
@@ -145,4 +130,4 @@ export function loadConfigFromString(content: string): LoadConfigResult {
 }
 
 // Re-export types
-export { type ResolvedConfig, type OpenReviewYamlConfig } from './schema.js';
+export { type ResolvedConfig, type OpenReviewConfig } from './schema.js';

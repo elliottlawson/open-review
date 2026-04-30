@@ -11,7 +11,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import { runReview, type ReviewInput } from '../core/agent.js';
 import { formatForHuman } from '../output/human.js';
-import { toJSON, toSkippedJSON } from '../output/agent.js';
+import { toJSON } from '../output/agent.js';
 import { renderComment } from '../output/comment-template.js';
 import { loadConfigFromFile, loadConfigFromString, type LoadConfigResult } from '../config/loader.js';
 import type { ResolvedConfig } from '../config/schema.js';
@@ -37,10 +37,6 @@ export interface ReviewArgs {
   apiKey?: string;
   /** Show progress */
   verbose: boolean;
-  /** Path to instructions/playbook file */
-  instructionsFile?: string;
-  /** Inline instructions text */
-  instructions?: string;
   /** Ephemeral focus for this review only */
   prompt?: string;
   /** Ticket context (title, description, acceptance criteria) */
@@ -97,10 +93,6 @@ export function parseReviewArgs(args: string[]): ReviewArgs {
       result.configPath = args[++i];
     } else if (arg === '--verbose' || arg === '-v') {
       result.verbose = true;
-    } else if (arg === '--instructions-file') {
-      result.instructionsFile = args[++i];
-    } else if (arg === '--instructions') {
-      result.instructions = args[++i];
     } else if (arg === '--prompt') {
       result.prompt = args[++i];
     } else if (arg === '--ticket-context') {
@@ -165,36 +157,7 @@ export function parseReviewArgs(args: string[]): ReviewArgs {
 // Git Helpers
 // ============================================================================
 
-/**
- * Simple glob matching supporting * (within segment) and ** (across segments)
- */
-function matchesGlob(filePath: string, pattern: string): boolean {
-  // Normalize separators
-  const normalizedPath = filePath.replace(/\\/g, '/');
-  const normalizedPattern = pattern.replace(/\\/g, '/');
-
-  // Convert glob to regex
-  const regexStr = normalizedPattern
-    .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '{{GLOBSTAR}}')
-    .replace(/\*/g, '[^/]*')
-    .replace(/\{\{GLOBSTAR\}\}/g, '.*');
-
-  const regex = new RegExp(`^${regexStr}$`);
-  return regex.test(normalizedPath);
-}
-
-function filterIgnoredFiles(files: string[], ignorePatterns: string[]): string[] {
-  if (ignorePatterns.length === 0) return files;
-  return files.filter(file => !ignorePatterns.some(pattern => matchesGlob(file, pattern)));
-}
-
-function allFilesMatchSkipPatterns(files: string[], skipPatterns: string[]): boolean {
-  if (skipPatterns.length === 0) return false;
-  return files.every(file => skipPatterns.some(pattern => matchesGlob(file, pattern)));
-}
-
-function getGitDiff(basePath: string, ref?: string, ignorePatterns: string[] = []): { diff: string; files: string[] } | null {
+function getGitDiff(basePath: string, ref?: string): { diff: string; files: string[] } | null {
   try {
     const compareRef = ref || 'HEAD';
     
@@ -208,8 +171,7 @@ function getGitDiff(basePath: string, ref?: string, ignorePatterns: string[] = [
       return null;
     }
     
-    const allFiles = filesOutput.split('\n').filter(Boolean);
-    const files = filterIgnoredFiles(allFiles, ignorePatterns);
+    const files = filesOutput.split('\n').filter(Boolean);
     
     if (files.length === 0) {
       return null;
@@ -227,7 +189,7 @@ function getGitDiff(basePath: string, ref?: string, ignorePatterns: string[] = [
   }
 }
 
-function getStagedDiff(basePath: string, ignorePatterns: string[] = []): { diff: string; files: string[] } | null {
+function getStagedDiff(basePath: string): { diff: string; files: string[] } | null {
   try {
     const filesOutput = execSync(
       'git diff --cached --name-only',
@@ -238,8 +200,7 @@ function getStagedDiff(basePath: string, ignorePatterns: string[] = []): { diff:
       return null;
     }
     
-    const allFiles = filesOutput.split('\n').filter(Boolean);
-    const files = filterIgnoredFiles(allFiles, ignorePatterns);
+    const files = filesOutput.split('\n').filter(Boolean);
     
     if (files.length === 0) {
       return null;
@@ -254,36 +215,6 @@ function getStagedDiff(basePath: string, ignorePatterns: string[] = []): { diff:
   } catch (error) {
     return null;
   }
-}
-
-// ============================================================================
-// Load Instructions
-// ============================================================================
-
-interface ResolvedInstructions {
-  fileContent?: string;
-  inlineText?: string;
-}
-
-function loadInstructions(
-  basePath: string,
-  filePath: string | undefined,
-  inlineText: string | undefined
-): ResolvedInstructions {
-  const result: ResolvedInstructions = {};
-
-  if (filePath) {
-    const fullPath = path.resolve(basePath, filePath);
-    if (fs.existsSync(fullPath)) {
-      result.fileContent = fs.readFileSync(fullPath, 'utf-8');
-    }
-  }
-
-  if (inlineText) {
-    result.inlineText = inlineText;
-  }
-
-  return result;
 }
 
 // ============================================================================
@@ -369,27 +300,15 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
 
   // Determine what to review
   let reviewInput: ReviewInput;
-  const ignorePatterns = config.ignore;
   
   if (args.diff) {
     // Review changes against a ref
     const changes = args.diff === 'staged' 
-      ? getStagedDiff(args.path, ignorePatterns)
-      : getGitDiff(args.path, args.diff, ignorePatterns);
+      ? getStagedDiff(args.path)
+      : getGitDiff(args.path, args.diff);
     
     if (!changes) {
       console.log('No changes to review.');
-      process.exit(0);
-    }
-
-    // Check skip_if_only patterns
-    const skipPatterns = config.review.skip_if_only ?? [];
-    if (allFilesMatchSkipPatterns(changes.files, skipPatterns)) {
-      if (args.format === 'json') {
-        console.log(toSkippedJSON(changes.files, true));
-      } else {
-        console.log('Review skipped: changes only affect excluded file types.');
-      }
       process.exit(0);
     }
 
@@ -405,12 +324,8 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
     }
   } else {
     // Review the whole codebase or let the agent explore
-    const ignorePrompt = ignorePatterns.length > 0
-      ? `\n\n## Ignore Patterns\nDo not review files matching these patterns:\n${ignorePatterns.map(p => `- ${p}`).join('\n')}`
-      : '';
-
     reviewInput = {
-      target: `Explore this codebase and review the code quality. Look for bugs, security issues, and areas for improvement.${ignorePrompt}`,
+      target: `Explore this codebase and review the code quality. Look for bugs, security issues, and areas for improvement.`,
       ticketContext: args.ticketContext,
     };
     
@@ -419,16 +334,8 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
     }
   }
 
-  // Resolve instructions with precedence: CLI > config
-  const instructionsFile = args.instructionsFile ?? config.review.instructions_file;
-  const instructionsInline = args.instructions ?? config.review.instructions;
-  const { fileContent, inlineText } = loadInstructions(args.path, instructionsFile, instructionsInline);
-
   if (args.verbose) {
     console.log(`Model: ${fullModel}`);
-    if (fileContent || inlineText) {
-      console.log('Using custom instructions');
-    }
     console.log('');
   }
 
@@ -470,8 +377,6 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
         basePath: args.path,
         model: fullModel,
         apiKey: resolvedApiKey,
-        instructions: inlineText,
-        instructionsFile: fileContent,
         prompt: args.prompt,
         sections: {
           must_fix: { enabled: outputConfig.sections.must_fix.enabled },
@@ -485,6 +390,7 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
             console.log(`  [${step.stepNumber}] ${call.name}(${argsPreview}...)`);
           }
         } : undefined,
+        config,
       },
       reviewInput
     );

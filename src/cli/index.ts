@@ -18,6 +18,7 @@ import 'dotenv/config';
 import { runInit, parseInitArgs } from './init.js';
 import { handleReview, parseReviewArgs } from './review.js';
 import { runSetupGithub, parseSetupGithubArgs } from './setup-github.js';
+import { runPublish } from './publish.js';
 
 // ============================================================================
 // CLI Argument Parsing
@@ -57,6 +58,7 @@ Open Review - AI-powered code review
 
 Commands:
   open-review init              Set up Open Review in current repository
+  open-review publish           Copy methodology files to .open-review/methodology/ for customization
   open-review review [path]     Review code locally (uses Mastra agent)
   open-review setup-github      Create GitHub Action workflow for PR reviews
 
@@ -73,10 +75,8 @@ Review options:
   --provider <name>           LLM provider (anthropic, openai, openrouter)
   --model <name>              LLM model name (e.g., claude-sonnet-4-20250514)
   --api-key <key>             API key for the LLM provider
-  --instructions-file <path>  Path to instructions/playbook file
-  --instructions "<text>"     Inline instructions (overrides config)
   --prompt "<text>"           Ephemeral focus for this review only
-  --config <path>             Path to .open-review.yml config file
+  --config <path>             Path to .open-review/config.yml config file
   --timezone <tz>             IANA timezone (e.g., America/New_York, Europe/London)
   
   Section visibility (true/false):
@@ -104,10 +104,10 @@ Options:
   -h, --help              Show this help message
 
 Configuration:
-  Place a .open-review.yml file in your repo root to configure behavior.
+  Place a .open-review/config.yml file in your repo root to configure behavior.
   Run 'open-review init' to create one interactively.
 
-Output configuration (.open-review.yml):
+Output configuration (.open-review/config.yml):
   output:
     format: human           # "human" | "json"
     colors: auto            # "auto" | "true" | "false"
@@ -167,6 +167,10 @@ async function main(): Promise<void> {
     case 'init':
       const initFlags = parseInitArgs(process.argv.slice(3));
       await runInit(process.cwd(), initFlags);
+      break;
+
+    case 'publish':
+      runPublish(process.cwd());
       break;
 
     case 'review':

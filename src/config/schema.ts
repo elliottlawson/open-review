@@ -1,7 +1,7 @@
 /**
  * Configuration Schema
- * 
- * Defines the structure of .open-review.yml
+ *
+ * Defines the structure of .open-review/config.yml
  */
 
 import { z } from 'zod';
@@ -17,17 +17,12 @@ const LLMConfigSchema = z.object({
 });
 
 const ReviewConfigSchema = z.object({
-  // File containing review instructions/conventions
-  instructions_file: z.string().optional(),
-
-  // Additional inline instructions (prepended to file content in agent prompt with ## header)
-  instructions: z.string().optional(),
-
-  // Flag PRs with empty descriptions
-  flag_empty_description: z.boolean().default(true),
-
-  // Skip review entirely if all changed files match these patterns
-  skip_if_only: z.array(z.string()).optional(),
+  methodology: z.enum(['default']).or(z.string()).default('default'),
+  presets: z.enum(['auto']).or(z.array(z.string())).default('auto'),
+  conventions: z.union([
+    z.enum(['auto']),
+    z.string(),
+  ]).default('auto'),
 });
 
 const SectionConfigSchema = z.object({
@@ -67,10 +62,13 @@ const OutputConfigSchema = z.object({
 });
 
 export const ConfigSchema = z.object({
+  version: z.string().default('1.0'),
+  review: ReviewConfigSchema.default({
+    methodology: 'default',
+    presets: 'auto',
+    conventions: 'auto',
+  }),
   llm: LLMConfigSchema.optional(),
-  review: ReviewConfigSchema.optional(),
-  // Files/paths to ignore (glob patterns)
-  ignore: z.array(z.string()).optional(),
   output: OutputConfigSchema.optional(),
 });
 
@@ -78,28 +76,28 @@ export const ConfigSchema = z.object({
 // Types
 // ============================================================================
 
-export type OpenReviewYamlConfig = z.infer<typeof ConfigSchema>;
+export type OpenReviewConfig = z.infer<typeof ConfigSchema>;
 export type SectionConfig = z.infer<typeof SectionConfigSchema>;
 export type VerdictLabelConfig = z.infer<typeof VerdictLabelSchema>;
 export type OutputConfig = z.infer<typeof OutputConfigSchema>;
 
 // Fully resolved config with all defaults applied
 export interface ResolvedConfig {
-  llm: z.infer<typeof LLMConfigSchema>;
+  version: string;
   review: z.infer<typeof ReviewConfigSchema>;
-  ignore: string[];
+  llm: z.infer<typeof LLMConfigSchema>;
   output: z.infer<typeof OutputConfigSchema>;
 }
 
 // Apply defaults to partial config
-export function resolveConfig(config: OpenReviewYamlConfig): ResolvedConfig {
+export function resolveConfig(config: OpenReviewConfig): ResolvedConfig {
   return {
-    llm: LLMConfigSchema.parse(config.llm ?? {}),
+    version: config.version,
     review: ReviewConfigSchema.parse(config.review ?? {}),
-    ignore: config.ignore ?? [],
+    llm: LLMConfigSchema.parse(config.llm ?? {}),
     output: OutputConfigSchema.parse(config.output ?? {}),
   };
 }
 
-// Default config (when no .open-review.yml exists)
-export const DEFAULT_CONFIG: ResolvedConfig = resolveConfig({});
+// Default config (when no config file exists)
+export const DEFAULT_CONFIG: ResolvedConfig = resolveConfig(ConfigSchema.parse({}));

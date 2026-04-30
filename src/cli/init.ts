@@ -2,22 +2,25 @@
  * Init Command
  *
  * Interactive wizard to set up Open Review in a repository.
- * Creates .open-review.yml with minimal, non-default settings only.
+ * Creates .open-review/config.yml and optionally generates skill files.
  *
- * Edit mode: if .open-review.yml exists, loads current values as defaults.
+ * Edit mode: if .open-review/config.yml exists, loads current values as defaults.
  */
 
 import { createInterface } from 'readline';
-import { existsSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
+import { join, resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { loadConfigFromFile } from '../config/loader.js';
 import { DEFAULT_CONFIG, type ResolvedConfig } from '../config/schema.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ProjectType = 'laravel' | 'node' | 'python' | 'ruby' | 'go' | 'generic';
 type Provider = 'anthropic' | 'openai' | 'openrouter';
 type CollapseMode = 'auto' | 'always' | 'never';
 
@@ -47,11 +50,11 @@ interface OutputSettings {
 interface WizardOptions {
   provider: Provider;
   model: string;
-  instructionsFile: string;
-  flagEmptyDescription: boolean;
-  skipIfOnly: string[];
-  ignorePatterns: string[];
+  presets: string[];
+  conventions: string;
   output: OutputSettings;
+  generateSkills: boolean;
+  generateAction: boolean;
 }
 
 interface InitFlags {
@@ -82,50 +85,74 @@ export function parseInitArgs(args: string[]): InitFlags {
 }
 
 // ============================================================================
-// Project Detection
+// Framework Detection
 // ============================================================================
 
-const PROJECT_TYPES: Record<ProjectType, { name: string; ignores: string[] }> = {
-  laravel: {
-    name: 'Laravel/PHP',
-    ignores: ['vendor/**', 'node_modules/**', '*.lock', 'storage/**', 'bootstrap/cache/**', 'public/build/**'],
-  },
-  node: {
-    name: 'Node.js',
-    ignores: ['node_modules/**', 'dist/**', 'build/**', '*.lock', '.next/**', 'coverage/**'],
-  },
-  python: {
-    name: 'Python',
-    ignores: ['venv/**', '.venv/**', '__pycache__/**', '*.egg-info/**', '.tox/**', 'dist/**', 'build/**'],
-  },
-  ruby: {
-    name: 'Ruby',
-    ignores: ['vendor/bundle/**', '*.lock', 'tmp/**', 'log/**'],
-  },
-  go: {
-    name: 'Go',
-    ignores: ['vendor/**', 'bin/**'],
-  },
-  generic: {
-    name: 'Generic',
-    ignores: ['*.lock', '*.min.js', '*.min.css', 'dist/**', 'build/**'],
-  },
-};
+interface DetectedFramework {
+  name: string;
+  preset: string;
+  configFiles: string[];
+}
 
-function detectProjectType(dir: string): ProjectType {
-  if (existsSync(join(dir, 'artisan')) && existsSync(join(dir, 'composer.json'))) return 'laravel';
-  if (existsSync(join(dir, 'package.json'))) return 'node';
-  if (existsSync(join(dir, 'requirements.txt')) || existsSync(join(dir, 'pyproject.toml')) || existsSync(join(dir, 'setup.py'))) return 'python';
-  if (existsSync(join(dir, 'Gemfile'))) return 'ruby';
-  if (existsSync(join(dir, 'go.mod'))) return 'go';
-  return 'generic';
+const FRAMEWORK_DETECTIONS: DetectedFramework[] = [
+  {
+    name: 'Laravel',
+    preset: 'laravel',
+    configFiles: ['artisan', 'composer.json'],
+  },
+  {
+    name: 'React',
+    preset: 'react',
+    configFiles: ['package.json'],
+  },
+  {
+    name: 'Next.js',
+    preset: 'nextjs',
+    configFiles: ['next.config.js', 'next.config.ts', 'next.config.mjs'],
+  },
+  {
+    name: 'Vue',
+    preset: 'vue',
+    configFiles: ['vue.config.js', 'vite.config.ts'],
+  },
+];
+
+function detectFrameworks(dir: string): DetectedFramework[] {
+  const detected: DetectedFramework[] = [];
+
+  for (const fw of FRAMEWORK_DETECTIONS) {
+    // For Laravel, require both artisan and composer.json
+    if (fw.configFiles.length > 1) {
+      if (fw.configFiles.every(f => existsSync(join(dir, f)))) {
+        detected.push(fw);
+      }
+    } else {
+      const configFile = fw.configFiles[0];
+      if (existsSync(join(dir, configFile))) {
+        // For React, check package.json for react dependency
+        if (fw.preset === 'react') {
+          try {
+            const pkg = JSON.parse(require('fs').readFileSync(join(dir, 'package.json'), 'utf-8'));
+            if (pkg.dependencies?.react || pkg.devDependencies?.react) {
+              detected.push(fw);
+            }
+          } catch {
+            // Skip if can't parse
+          }
+        } else {
+          detected.push(fw);
+        }
+      }
+    }
+  }
+
+  return detected;
 }
 
 // ============================================================================
 // Model Presets
 // ============================================================================
 
-// TODO: Consider fetching from models.dev to avoid maintaining this list manually.
 const PROVIDER_PRESETS: Record<Provider, string[]> = {
   anthropic: ['claude-sonnet-4-20250514', 'claude-opus-4-20250514'],
   openai: ['gpt-4o', 'gpt-4o-mini'],
@@ -199,54 +226,145 @@ async function promptWithDefault(
 }
 
 // ============================================================================
-// Instructions File Detection
+// Skill File Handling
 // ============================================================================
 
-function detectInstructionsFile(dir: string): string | null {
-  const candidates = ['CONVENTIONS.md', 'CLAUDE.md', '.github/CONVENTIONS.md', 'docs/conventions.md', 'docs/CONVENTIONS.md'];
-  for (const file of candidates) {
-    if (existsSync(join(dir, file))) return file;
+const SKILL_MAPPINGS = [
+  { template: 'cursor.md', target: '.cursorrules', name: 'Cursor' },
+  { template: 'claude-code.md', target: 'CLAUDE.md', name: 'Claude Code' },
+  { template: 'open-code.md', target: 'AGENTS.md', name: 'Open Code' },
+  { template: 'generic.md', target: '.ai/instructions.md', name: 'Generic' },
+];
+
+const SKILLS_DIR = resolve(__dirname, '../../skills');
+
+function handleExistingSkillFile(
+  rl: ReturnType<typeof createInterface>,
+  targetPath: string,
+  targetName: string
+): Promise<'overwrite' | 'append' | 'skip'> {
+  return new Promise(async (resolve) => {
+    console.log(`\n⚠️  Existing ${targetName} detected.`);
+    const choice = await promptChoice(rl, `How to handle?`, ['Overwrite', 'Append', 'Skip'], 0);
+    resolve(choice === 0 ? 'overwrite' : choice === 1 ? 'append' : 'skip');
+  });
+}
+
+async function generateSkillFiles(
+  cwd: string,
+  rl: ReturnType<typeof createInterface>,
+  force: boolean
+): Promise<void> {
+  console.log('\n📄 Agent Skills\n');
+
+  for (const mapping of SKILL_MAPPINGS) {
+    const targetPath = join(cwd, mapping.target);
+    const templatePath = join(SKILLS_DIR, mapping.template);
+
+    if (!existsSync(templatePath)) {
+      console.log(`  ⚠  Template not found: ${mapping.template}`);
+      continue;
+    }
+
+    const templateContent = require('fs').readFileSync(templatePath, 'utf-8');
+
+    if (existsSync(targetPath)) {
+      if (force) {
+        writeFileSync(targetPath, templateContent);
+        console.log(`  ✓  Overwrote: ${mapping.target}`);
+        continue;
+      }
+
+      const action = await handleExistingSkillFile(rl, targetPath, mapping.name);
+      if (action === 'skip') {
+        console.log(`  ⏭  Skipped: ${mapping.target}`);
+        continue;
+      }
+
+      if (action === 'append') {
+        const existing = require('fs').readFileSync(targetPath, 'utf-8');
+        writeFileSync(targetPath, existing + '\n\n' + templateContent);
+        console.log(`  ✓  Appended to: ${mapping.target}`);
+      } else {
+        writeFileSync(targetPath, templateContent);
+        console.log(`  ✓  Overwrote: ${mapping.target}`);
+      }
+    } else {
+      // Create parent directory if needed (for .ai/instructions.md)
+      const targetDir = require('path').dirname(targetPath);
+      if (!existsSync(targetDir)) {
+        mkdirSync(targetDir, { recursive: true });
+      }
+      writeFileSync(targetPath, templateContent);
+      console.log(`  ✓  Created: ${mapping.target}`);
+    }
   }
-  return null;
 }
 
 // ============================================================================
-// Config Builder: Minimal Output (only non-defaults)
+// Preset Distribution
 // ============================================================================
 
-function isDifferent(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a) !== JSON.stringify(b);
+const PRESETS_DIR = resolve(__dirname, '../../presets');
+
+function distributePresets(cwd: string, presetNames: string[]): void {
+  if (presetNames.length === 0) return;
+
+  const targetDir = join(cwd, '.open-review', 'presets');
+  mkdirSync(targetDir, { recursive: true });
+
+  for (const name of presetNames) {
+    const sourcePath = join(PRESETS_DIR, `${name}.md`);
+    const targetPath = join(targetDir, `${name}.md`);
+
+    if (existsSync(sourcePath)) {
+      copyFileSync(sourcePath, targetPath);
+      console.log(`  ✓  Copied preset: ${name}.md`);
+    } else {
+      console.log(`  ⚠  Preset not found: ${name}.md`);
+    }
+  }
 }
 
-function generateMinimalConfig(options: WizardOptions): string {
+// ============================================================================
+// Config Generator
+// ============================================================================
+
+function generateConfig(options: WizardOptions): string {
   const lines: string[] = [
     '# Open Review Configuration',
     '# https://github.com/elliottlawson/open-review',
     '',
-    'llm:',
-    `  provider: ${options.provider}`,
-    `  model: ${options.model}`,
+    'version: "1.0"',
+    '',
+    '# Review Settings',
+    'review:',
+    `  methodology: default`,
   ];
 
-  // review section
-  const reviewLines: string[] = [];
-  if (options.instructionsFile) {
-    reviewLines.push(`  instructions_file: ${options.instructionsFile}`);
-  }
-  if (options.flagEmptyDescription !== DEFAULT_CONFIG.review.flag_empty_description) {
-    reviewLines.push(`  flag_empty_description: ${options.flagEmptyDescription}`);
-  }
-  if (options.skipIfOnly.length > 0) {
-    reviewLines.push('  skip_if_only:');
-    for (const p of options.skipIfOnly) reviewLines.push(`    - "${p}"`);
+  if (options.presets.length > 0) {
+    lines.push(`  presets: [${options.presets.join(', ')}]`);
+  } else {
+    lines.push(`  presets: auto`);
   }
 
-  if (reviewLines.length > 0) {
-    lines.push('', 'review:');
-    lines.push(...reviewLines);
+  if (options.conventions && options.conventions !== 'auto') {
+    // Check if it looks like inline text vs a file path
+    if (options.conventions.includes('/') || options.conventions.endsWith('.md')) {
+      lines.push(`  conventions: ${options.conventions}`);
+    } else {
+      lines.push(`  conventions: "${options.conventions}"`);
+    }
+  } else {
+    lines.push(`  conventions: auto`);
   }
 
-  // output section — only include what's non-default
+  // LLM section
+  lines.push('', '# LLM Settings', 'llm:');
+  lines.push(`  provider: ${options.provider}`);
+  lines.push(`  model: ${options.model}`);
+
+  // Output section (only if non-defaults)
   const defaultOutput = DEFAULT_CONFIG.output;
   const out = options.output;
   const outputLines: string[] = [];
@@ -264,48 +382,9 @@ function generateMinimalConfig(options: WizardOptions): string {
     outputLines.push(`  path: ${out.path}`);
   }
 
-  // sections
-  const sectionKeys = ['must_fix', 'should_fix', 'suggestions', 'questions'] as const;
-  const sectionLines: string[] = [];
-  for (const key of sectionKeys) {
-    const sec = out.sections[key];
-    const defSec = defaultOutput.sections[key];
-    if (sec.enabled !== defSec.enabled || sec.collapse !== defSec.collapse) {
-      sectionLines.push(`    ${key}:`);
-      if (sec.enabled !== defSec.enabled) sectionLines.push(`      enabled: ${sec.enabled}`);
-      if (sec.collapse !== defSec.collapse) sectionLines.push(`      collapse: ${sec.collapse}`);
-    }
-  }
-  if (sectionLines.length > 0) {
-    outputLines.push('  sections:');
-    outputLines.push(...sectionLines);
-  }
-
-  // verdicts
-  const verdictKeys = ['approve', 'changes_needed', 'hold'] as const;
-  const verdictLines: string[] = [];
-  for (const key of verdictKeys) {
-    if (out.verdicts[key].label !== defaultOutput.verdicts[key].label) {
-      verdictLines.push(`    ${key}:`);
-      verdictLines.push(`      label: "${out.verdicts[key].label}"`);
-    }
-  }
-  if (verdictLines.length > 0) {
-    outputLines.push('  verdicts:');
-    outputLines.push(...verdictLines);
-  }
-
   if (outputLines.length > 0) {
     lines.push('', 'output:');
     lines.push(...outputLines);
-  }
-
-  // ignore
-  if (options.ignorePatterns.length > 0) {
-    lines.push('', 'ignore:');
-    for (const pattern of options.ignorePatterns) {
-      lines.push(`  - "${pattern}"`);
-    }
   }
 
   lines.push('');
@@ -316,17 +395,15 @@ function generateMinimalConfig(options: WizardOptions): string {
 // Resolve Options from Config or Defaults
 // ============================================================================
 
-function buildOptionsFromConfig(config: ResolvedConfig, cwd: string): WizardOptions {
-  const detectedType = detectProjectType(cwd);
-  const detectedInstructions = detectInstructionsFile(cwd);
+function buildOptionsFromConfig(config: ResolvedConfig): WizardOptions {
+  const presets = config.review.presets === 'auto' ? [] : config.review.presets;
+  const conventions = config.review.conventions === 'auto' ? '' : config.review.conventions;
 
   return {
     provider: config.llm.provider as Provider,
     model: config.llm.model,
-    instructionsFile: config.review.instructions_file ?? detectedInstructions ?? 'CONVENTIONS.md',
-    flagEmptyDescription: config.review.flag_empty_description,
-    skipIfOnly: config.review.skip_if_only ?? [],
-    ignorePatterns: config.ignore.length > 0 ? [...config.ignore] : [...PROJECT_TYPES[detectedType].ignores],
+    presets,
+    conventions,
     output: {
       format: config.output.format,
       colors: config.output.colors,
@@ -344,6 +421,8 @@ function buildOptionsFromConfig(config: ResolvedConfig, cwd: string): WizardOpti
         hold: { ...config.output.verdicts.hold },
       },
     },
+    generateSkills: false,
+    generateAction: false,
   };
 }
 
@@ -364,7 +443,7 @@ async function promptModel(rl: ReturnType<typeof createInterface>, provider: Pro
   const choices = [...presets, 'Other (custom)'];
 
   let defaultIndex = presets.indexOf(current);
-  if (defaultIndex === -1) defaultIndex = choices.length - 1; // "Other"
+  if (defaultIndex === -1) defaultIndex = choices.length - 1;
 
   const choice = await promptChoice(rl, 'Model:', choices, defaultIndex);
 
@@ -372,43 +451,9 @@ async function promptModel(rl: ReturnType<typeof createInterface>, provider: Pro
     return presets[choice];
   }
 
-  // Other — pre-fill with current model if it's not a preset
   const defaultText = presets.includes(current) ? '' : current;
   const custom = await prompt(rl, `Model name${defaultText ? ` [${defaultText}]` : ''}: `);
   return custom || defaultText || getDefaultModel(provider);
-}
-
-async function promptInstructionsFile(rl: ReturnType<typeof createInterface>, current: string, cwd: string): Promise<string> {
-  const value = await promptWithDefault(rl, 'Instructions file', current);
-  if (!value) return '';
-  return value;
-}
-
-async function promptIgnorePatterns(
-  rl: ReturnType<typeof createInterface>,
-  detectedType: ProjectType,
-  current: string[]
-): Promise<string[]> {
-  const typeInfo = PROJECT_TYPES[detectedType];
-
-  console.log(`\nDetected ${typeInfo.name} project. Standard ignore patterns:`);
-  for (const pattern of typeInfo.ignores) {
-    console.log(`  - ${pattern}`);
-  }
-
-  const useStandard = await promptYesNo(rl, `Use these ignore patterns?`, true);
-  let patterns = useStandard ? [...typeInfo.ignores] : [];
-
-  const addExtra = await promptYesNo(rl, 'Add additional ignore patterns?', false);
-  if (addExtra) {
-    const extra = await prompt(rl, 'Patterns (comma-separated): ');
-    if (extra) {
-      const extras = extra.split(',').map((p) => p.trim()).filter(Boolean);
-      patterns = [...patterns, ...extras];
-    }
-  }
-
-  return patterns;
 }
 
 async function promptTimezone(rl: ReturnType<typeof createInterface>, current: string): Promise<string> {
@@ -425,13 +470,16 @@ async function promptTimezone(rl: ReturnType<typeof createInterface>, current: s
 // ============================================================================
 
 function writeConfig(cwd: string, options: WizardOptions, isEdit: boolean): void {
-  console.log(`\n${isEdit ? '📝 Updating' : '📝 Creating'} .open-review.yml...\n`);
-  const content = generateMinimalConfig(options);
-  writeFileSync(join(cwd, '.open-review.yml'), content);
-  console.log(`   ✓ ${isEdit ? 'Updated' : 'Created'} .open-review.yml`);
+  const configDir = join(cwd, '.open-review');
+  mkdirSync(configDir, { recursive: true });
+
+  console.log(`\n${isEdit ? '📝 Updating' : '📝 Creating'} .open-review/config.yml...\n`);
+  const content = generateConfig(options);
+  writeFileSync(join(configDir, 'config.yml'), content);
+  console.log(`   ✓ ${isEdit ? 'Updated' : 'Created'} .open-review/config.yml`);
 }
 
-function printNextSteps(options: WizardOptions, isEdit: boolean): void {
+function printNextSteps(isEdit: boolean): void {
   console.log('\n' + '='.repeat(50));
   console.log(`${isEdit ? '✅ Updated' : '✅ Created'}!\n`);
 
@@ -439,11 +487,6 @@ function printNextSteps(options: WizardOptions, isEdit: boolean): void {
     console.log('Next steps:\n');
     console.log('1. Set your API key:');
     console.log('   export OPEN_REVIEW_API_KEY=your_key_here');
-    console.log('');
-  }
-
-  if (options.instructionsFile && !existsSync(options.instructionsFile)) {
-    console.log(`Tip: Create ${options.instructionsFile} to add custom review instructions.`);
     console.log('');
   }
 
@@ -460,20 +503,26 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
   console.log(`\n🔧 Open Review ${isEdit ? 'Update' : 'Setup'} (quick)\n`);
 
   const { config } = loadConfigFromFile(cwd);
-  const options = buildOptionsFromConfig(config, cwd);
+  const options = buildOptionsFromConfig(config);
 
   if (flags.provider) {
     const providerChanged = flags.provider !== options.provider;
     options.provider = flags.provider;
-    // If provider changed and no explicit model given, reset to provider default
     if (providerChanged && !flags.model) {
       options.model = getDefaultModel(flags.provider);
     }
   }
   if (flags.model) options.model = flags.model;
 
+  // Auto-detect presets
+  const detected = detectFrameworks(cwd);
+  if (detected.length > 0) {
+    options.presets = detected.map(f => f.preset);
+    console.log(`Detected: ${detected.map(f => f.name).join(', ')}`);
+  }
+
   writeConfig(cwd, options, isEdit);
-  printNextSteps(options, isEdit);
+  printNextSteps(isEdit);
 }
 
 // ============================================================================
@@ -481,7 +530,7 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
 // ============================================================================
 
 export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { quick: false, force: false }): Promise<void> {
-  const configPath = join(cwd, '.open-review.yml');
+  const configPath = join(cwd, '.open-review', 'config.yml');
   const configExists = existsSync(configPath);
   const isEdit = configExists;
 
@@ -493,20 +542,26 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
 
   // Load existing config or defaults
   const { config: fileConfig } = loadConfigFromFile(cwd);
-  const options = buildOptionsFromConfig(fileConfig, cwd);
+  const options = buildOptionsFromConfig(fileConfig);
 
   console.log('\n🔧 Open Review Setup\n');
 
   if (isEdit) {
-    console.log('Found existing .open-review.yml');
+    console.log('Found existing .open-review/config.yml');
     console.log('Press Enter to keep current values, or type new ones.\n');
   } else {
-    console.log('This wizard creates .open-review.yml in your project root.\n');
+    console.log('This wizard creates .open-review/config.yml in your project root.\n');
   }
 
-  // Step 1: Project detection
-  const detectedType = detectProjectType(cwd);
-  console.log(`📁 Detected: ${PROJECT_TYPES[detectedType].name} project\n`);
+  // Step 1: Framework detection
+  const detectedFrameworks = detectFrameworks(cwd);
+  if (detectedFrameworks.length > 0) {
+    console.log(`📁 Detected: ${detectedFrameworks.map(f => f.name).join(', ')}`);
+    const applyPresets = await promptYesNo(rl, `Apply detected presets?`, true);
+    if (applyPresets) {
+      options.presets = detectedFrameworks.map(f => f.preset);
+    }
+  }
 
   // Step 2: Provider
   options.provider = await promptProvider(rl, options.provider);
@@ -514,17 +569,54 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
   // Step 3: Model
   options.model = await promptModel(rl, options.provider, options.model);
 
-  // Step 4: Instructions file
-  options.instructionsFile = await promptInstructionsFile(rl, options.instructionsFile, cwd);
+  // Step 4: Generate config file
+  const generateConfigFile = await promptYesNo(rl, 'Generate config file?', true);
 
-  // Step 5: Ignore patterns
-  options.ignorePatterns = await promptIgnorePatterns(rl, detectedType, options.ignorePatterns);
+  // Step 5: Install agent skills
+  options.generateSkills = await promptYesNo(rl, 'Install agent skills?', true);
 
-  // Step 6: Timezone
+  // Step 6: Install GitHub Action
+  options.generateAction = await promptYesNo(rl, 'Install GitHub Action?', true);
+
+  // Step 7: Timezone
   options.output.timezone = await promptTimezone(rl, options.output.timezone);
 
   rl.close();
 
-  writeConfig(cwd, options, isEdit);
-  printNextSteps(options, isEdit);
+  // Write files
+  if (generateConfigFile) {
+    writeConfig(cwd, options, isEdit);
+  }
+
+  // Copy presets if any were selected
+  if (options.presets.length > 0) {
+    console.log('\n📦 Presets\n');
+    distributePresets(cwd, options.presets);
+  }
+
+  // Generate skill files
+  if (options.generateSkills) {
+    const rl2 = createInterface({ input: process.stdin, output: process.stdout });
+    await generateSkillFiles(cwd, rl2, flags.force);
+    rl2.close();
+  }
+
+  // Generate GitHub Action workflow
+  if (options.generateAction) {
+    const workflowDir = join(cwd, '.github', 'workflows');
+    const workflowPath = join(workflowDir, 'open-review.yml');
+    const templatePath = resolve(__dirname, '../../templates/workflow.yml');
+
+    if (existsSync(templatePath)) {
+      mkdirSync(workflowDir, { recursive: true });
+      if (!existsSync(workflowPath) || flags.force) {
+        copyFileSync(templatePath, workflowPath);
+        console.log(`\n  ✓  Created: .github/workflows/open-review.yml`);
+      } else {
+        console.log(`\n  ⏭  Already exists: .github/workflows/open-review.yml`);
+      }
+    }
+  }
+
+  printNextSteps(isEdit);
 }

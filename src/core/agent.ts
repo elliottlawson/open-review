@@ -8,10 +8,13 @@
 import { Agent } from '@mastra/core/agent';
 import { Workspace, LocalFilesystem } from '@mastra/core/workspace';
 import { z } from 'zod';
-import type { ReviewResult, ReviewFinding, SectionConfig } from './types.js';
+import type { ReviewResult, ReviewFinding } from './types.js';
 import { ReviewResultSchema } from './schema.js';
 import { buildSystemPrompt } from './prompts/index.js';
 import { validateDiscipline } from './discipline.js';
+import type { ResolvedConfig } from '../config/schema.js';
+import { loadPresets } from './preset-loader.js';
+import { getAutoPresets } from './framework-detector.js';
 
 // ============================================================================
 // Configuration
@@ -31,16 +34,14 @@ export interface ReviewAgentConfig {
   model: string;
   /** API key for the LLM provider */
   apiKey?: string;
-  /** Resolved inline instructions text */
-  instructions?: string;
-  /** Resolved file content (already read by CLI) */
-  instructionsFile?: string;
   /** Ephemeral focus text */
   prompt?: string;
   /** Section visibility configuration */
   sections?: SectionVisibilityConfig;
   /** Callback for each step (for progress reporting) */
   onStep?: (step: StepInfo) => void;
+  /** Resolved config from .open-review/config.yml */
+  config?: ResolvedConfig;
 }
 
 export interface StepInfo {
@@ -73,11 +74,54 @@ export async function createReviewAgent(config: ReviewAgentConfig) {
     }),
   });
 
+  // Resolve presets
+  let presetContent: string[] = [];
+  if (config.config) {
+    const presetNames = config.config.review.presets;
+    if (presetNames === 'auto') {
+      // Auto-detect frameworks
+      const autoPresets = getAutoPresets(config.basePath);
+      presetContent = loadPresets(autoPresets, config.basePath);
+    } else {
+      presetContent = loadPresets(presetNames, config.basePath);
+    }
+  }
+
+  // Resolve conventions
+  let conventions: string | undefined;
+  if (config.config) {
+    const conventionsConfig = config.config.review.conventions;
+    if (conventionsConfig !== 'auto') {
+      // Could be inline text or a file path
+      if (conventionsConfig.includes('/') || conventionsConfig.endsWith('.md')) {
+        // Looks like a file path — read it
+        try {
+          const fs = await import('fs');
+          const path = await import('path');
+          const fullPath = path.resolve(config.basePath, conventionsConfig);
+          if (fs.existsSync(fullPath)) {
+            conventions = fs.readFileSync(fullPath, 'utf-8');
+          }
+        } catch {
+          // If file read fails, treat as inline text
+          conventions = conventionsConfig;
+        }
+      } else {
+        // Inline text
+        conventions = conventionsConfig;
+      }
+    }
+  }
+
   const instructions = buildSystemPrompt({
-    instructions: config.instructions,
-    instructionsFile: config.instructionsFile,
+    conventions,
+    presets: presetContent.length > 0 ? presetContent : undefined,
     sections: config.sections,
     prompt: config.prompt,
+    cwd: config.basePath,
+    methodologyPath: config.config?.review.methodology !== 'default'
+      ? config.config?.review.methodology
+      : undefined,
   });
 
   const agent = new Agent({
@@ -89,8 +133,6 @@ export async function createReviewAgent(config: ReviewAgentConfig) {
     },
     instructions,
     workspace,
-    // Note: Memory with observational compression can be added later
-    // for handling very large codebases. Requires storage configuration.
   });
 
   return agent;
