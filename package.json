@@ -11,7 +11,8 @@
     "dist",
     "templates",
     "methodology",
-    "presets"
+    "presets",
+    "skills"
   ],
   "scripts": {
     "build": "tsc",
