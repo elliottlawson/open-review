@@ -20,9 +20,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Install Open Review
+      - name: Install dependencies
         run: npm install
 
       - name: Run Review
@@ -30,4 +30,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPEN_REVIEW_API_KEY: ${{ secrets.OPEN_REVIEW_API_KEY }}
         run: |
-          npm run review -- ${{ github.repository }}#${{ github.event.pull_request.number }}
+          npx tsx src/cli/index.ts review --diff ${{ github.event.pull_request.base.ref }} --json
