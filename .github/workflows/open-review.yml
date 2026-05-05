@@ -23,5 +23,5 @@ jobs:
         uses: elliottlawson/open-review-action@v1
         with:
           provider: openrouter
-          model: kimi-2.6
+          model: moonshotai/kimi-k2.6
           api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}
