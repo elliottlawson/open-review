@@ -16,18 +16,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          fetch-depth: 0
 
-      - name: Install Open Review
-        run: npm install
-
-      - name: Run Review
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPEN_REVIEW_API_KEY: ${{ secrets.OPEN_REVIEW_API_KEY }}
-        run: |
-          npm run review -- ${{ github.repository }}#${{ github.event.pull_request.number }}
+      - name: Open Review
+        uses: elliottlawson/open-review-action@v1
+        with:
+          provider: openrouter
+          model: moonshotai/kimi-k2.6
+          api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}
