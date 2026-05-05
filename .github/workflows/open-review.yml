@@ -30,4 +30,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPEN_REVIEW_API_KEY: ${{ secrets.OPEN_REVIEW_API_KEY }}
         run: |
-          npx tsx src/cli/index.ts review --diff ${{ github.event.pull_request.base.ref }} --json
+          npx tsx src/cli/index.ts review --diff ${{ github.event.pull_request.base.ref }} --json --provider openrouter --model kimi-2.6
