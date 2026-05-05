@@ -8,7 +8,7 @@
  */
 
 import { createInterface } from 'readline';
-import { existsSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
+import { existsSync, writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { loadConfigFromFile } from '../config/loader.js';
@@ -266,7 +266,7 @@ async function generateSkillFiles(
       continue;
     }
 
-    const templateContent = require('fs').readFileSync(templatePath, 'utf-8');
+    const templateContent = readFileSync(templatePath, 'utf-8');
 
     if (existsSync(targetPath)) {
       if (force) {
@@ -282,7 +282,7 @@ async function generateSkillFiles(
       }
 
       if (action === 'append') {
-        const existing = require('fs').readFileSync(targetPath, 'utf-8');
+        const existing = readFileSync(targetPath, 'utf-8');
         writeFileSync(targetPath, existing + '\n\n' + templateContent);
         console.log(`  ✓  Appended to: ${mapping.target}`);
       } else {
@@ -291,7 +291,7 @@ async function generateSkillFiles(
       }
     } else {
       // Create parent directory if needed (for .ai/instructions.md)
-      const targetDir = require('path').dirname(targetPath);
+      const targetDir = dirname(targetPath);
       if (!existsSync(targetDir)) {
         mkdirSync(targetDir, { recursive: true });
       }
