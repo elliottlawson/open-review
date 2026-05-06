@@ -8,9 +8,10 @@
  */
 
 import { createInterface } from 'readline';
-import { existsSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
+import { existsSync, writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { parse as parseYaml } from 'yaml';
 import { loadConfigFromFile } from '../config/loader.js';
 import { DEFAULT_CONFIG, type ResolvedConfig } from '../config/schema.js';
 import { installSkills } from './skills.js';
@@ -65,6 +66,11 @@ interface InitFlags {
   provider?: Provider;
   model?: string;
   force: boolean;
+}
+
+interface ExistingConfigSections {
+  llm: boolean;
+  output: boolean;
 }
 
 export function parseInitArgs(args: string[]): InitFlags {
@@ -312,7 +318,7 @@ function generateConfig(options: WizardOptions): string {
     }
   }
 
-  if (outputLines.length > 0) {
+  if (options.configureOutput && outputLines.length > 0) {
     lines.push('', 'output:');
     lines.push(...outputLines);
   }
@@ -325,7 +331,10 @@ function generateConfig(options: WizardOptions): string {
 // Resolve Options from Config or Defaults
 // ============================================================================
 
-function buildOptionsFromConfig(config: ResolvedConfig): WizardOptions {
+function buildOptionsFromConfig(
+  config: ResolvedConfig,
+  existingSections: ExistingConfigSections = { llm: false, output: false }
+): WizardOptions {
   const presets = config.review.presets === 'auto' ? [] : config.review.presets;
   const conventions = config.review.conventions === 'auto' ? '' : config.review.conventions;
 
@@ -351,11 +360,28 @@ function buildOptionsFromConfig(config: ResolvedConfig): WizardOptions {
         hold: { ...config.output.verdicts.hold },
       },
     },
-    configureLlm: false,
-    configureOutput: false,
+    configureLlm: existingSections.llm,
+    configureOutput: existingSections.output,
     generateSkills: false,
     generateAction: false,
   };
+}
+
+function detectExistingConfigSections(cwd: string): ExistingConfigSections {
+  const configPath = join(cwd, '.open-review', 'config.yml');
+  if (!existsSync(configPath)) {
+    return { llm: false, output: false };
+  }
+
+  try {
+    const parsed = parseYaml(readFileSync(configPath, 'utf-8')) as Record<string, unknown> | null;
+    return {
+      llm: !!parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, 'llm'),
+      output: !!parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, 'output'),
+    };
+  } catch {
+    return { llm: false, output: false };
+  }
 }
 
 // ============================================================================
@@ -452,7 +478,7 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
   console.log(`\n🔧 Open Review ${isEdit ? 'Update' : 'Setup'} (quick)\n`);
 
   const { config } = loadConfigFromFile(cwd);
-  const options = buildOptionsFromConfig(config);
+  const options = buildOptionsFromConfig(config, detectExistingConfigSections(cwd));
 
   if (flags.provider) {
     const providerChanged = flags.provider !== options.provider;
@@ -463,6 +489,10 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
   }
   if (flags.model) options.model = flags.model;
 
+  options.generateSkills = true;
+  options.generateAction = false;
+  options.configureLlm = options.configureLlm || !!flags.provider || !!flags.model;
+
   // Auto-detect presets
   const detected = detectFrameworks(cwd);
   if (detected.length > 0) {
@@ -471,11 +501,6 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
   }
 
   writeConfig(cwd, options, isEdit);
-  options.generateSkills = true;
-  options.generateAction = false;
-  options.configureLlm = false;
-  options.configureOutput = false;
-
   await installSkills(cwd, { force: flags.force, interactive: false });
   printNextSteps(isEdit, true, false, false);
 }
@@ -496,8 +521,9 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
   // Load existing config or defaults
+  const existingSections = detectExistingConfigSections(cwd);
   const { config: fileConfig } = loadConfigFromFile(cwd);
-  const options = buildOptionsFromConfig(fileConfig);
+  const options = buildOptionsFromConfig(fileConfig, existingSections);
 
   console.log('\n🔧 Open Review Setup\n');
 
@@ -524,8 +550,8 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
   options.generateAction = await promptYesNo(rl, 'Install GitHub Action?', true);
   const configureStandaloneCli = await promptYesNo(rl, 'Configure standalone local CLI review?', false);
 
-  options.configureLlm = options.generateAction || configureStandaloneCli;
-  options.configureOutput = options.generateAction;
+  options.configureLlm = existingSections.llm || options.generateAction || configureStandaloneCli;
+  options.configureOutput = existingSections.output || options.generateAction;
 
   // Step 3: LLM settings, only for harness-driven surfaces
   if (options.configureLlm) {
@@ -538,7 +564,7 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
   const generateConfigFile = await promptYesNo(rl, 'Generate config file?', true);
 
   // Step 5: Timezone, only for gateway/hosted output surfaces
-  if (options.configureOutput) {
+  if (options.generateAction) {
     options.output.timezone = await promptTimezone(rl, options.output.timezone);
   }
 
