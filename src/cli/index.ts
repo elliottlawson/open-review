@@ -19,6 +19,7 @@ import { runInit, parseInitArgs } from './init.js';
 import { handleReview, parseReviewArgs } from './review.js';
 import { runSetupGithub, parseSetupGithubArgs } from './setup-github.js';
 import { runPublish } from './publish.js';
+import { parseSkillsArgs, runSkillsCommand } from './skills.js';
 
 // ============================================================================
 // CLI Argument Parsing
@@ -59,6 +60,7 @@ Open Review - AI-powered code review
 Commands:
   open-review init              Set up Open Review in current repository
   open-review publish           Copy methodology files to .open-review/methodology/ for customization
+  open-review skills            Manage agent skill installs
   open-review review [path]     Review code locally (uses Mastra agent)
   open-review setup-github      Create GitHub Action workflow for PR reviews
 
@@ -99,6 +101,16 @@ Review options:
 Setup-github options:
   -y, --quick             Non-interactive setup with defaults
   -f, --force             Overwrite existing workflow
+
+Skills options:
+  open-review skills install    Install agent skills
+  open-review skills status     Show installed skill targets
+  open-review skills update     Update installed skill targets
+  open-review skills remove     Remove installed skill targets
+  --target <name>               agents, claude, opencode, gemini, codex, windsurf, cursor
+  --all                         Install all supported targets
+  --command <name>              Slash command name where supported (default: review)
+  -f, --force                   Replace modified generated files
 
 Options:
   -h, --help              Show this help message
@@ -171,6 +183,11 @@ async function main(): Promise<void> {
 
     case 'publish':
       runPublish(process.cwd());
+      break;
+
+    case 'skills':
+      const skillsArgs = parseSkillsArgs(process.argv.slice(3));
+      await runSkillsCommand(process.cwd(), skillsArgs);
       break;
 
     case 'review':

@@ -13,6 +13,7 @@ The authoritative contracts live in committed TypeScript source files:
 | `src/core/agent.ts` | **Source of truth** for agent instructions and how they map to output sections |
 | `src/output/comment-template.ts` | PR comment template specification (GitHub-flavored markdown formatter) |
 | `methodology/core.md` | **Source of truth** for the review methodology (6-step reasoning process) |
+| `docs/SKILL_SYSTEM.md` | **Source of intent** for agent skill installation, host adapters, manifests, and update semantics |
 
 > **Rule**: When changing behavior, document the intended contract before modifying committed source. Update specs, then diff against the source of truth files above and apply changes. This prevents drift between intent and implementation.
 
@@ -40,6 +41,22 @@ The authoritative contracts live in committed TypeScript source files:
 - **Structured output**: AI produces `ReviewResult` JSON. Formatters transform it for display.
 - **Config-driven**: Behavior controlled by `.open-review/config.yml` and CLI flags.
 - **Methodology-first**: The reasoning process is the product, not the tool.
+
+## Agent Skill System Intent
+
+Agent skill mode is distinct from standalone CLI mode. A local AI agent using Open Review skills should not run `open-review review` by default, because that delegates to a second AI harness and requires separate API credentials. Instead, the existing agent should read the Open Review project configuration, methodology, presets, and conventions, then perform the review itself with its current tools and context.
+
+Skill content and skill installation are separate concerns:
+
+- The canonical project-local skill definition should live at `.agents/skills/open-review/SKILL.md`.
+- Skill install state should live at `.open-review/skills.yml`, separate from `.open-review/config.yml`.
+- Host-specific adapters should install thin entrypoints that point to the canonical skill definition.
+- Shared user-owned files such as `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` must be modified only through managed blocks.
+- Native host files such as `.claude/skills/open-review/SKILL.md`, `.opencode/commands/review.md`, `.gemini/commands/review.toml`, `.windsurf/workflows/review.md`, and `.cursor/rules/open-review.mdc` are preferred when supported.
+- Auto-detection should be advisory only: suggest targets based on existing files, then let the user choose.
+- Skill lifecycle should be independently manageable with future commands like `open-review skills install/status/update/remove`.
+
+Standalone CLI mode (`open-review review`) and CI mode still require API keys because Open Review owns the AI harness in those contexts. Agent skill mode should not require an Open Review API key.
 
 ## Environment
 
