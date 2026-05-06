@@ -8,11 +8,12 @@
  */
 
 import { createInterface } from 'readline';
-import { existsSync, writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs';
+import { existsSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { loadConfigFromFile } from '../config/loader.js';
 import { DEFAULT_CONFIG, type ResolvedConfig } from '../config/schema.js';
+import { installSkills } from './skills.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -226,82 +227,6 @@ async function promptWithDefault(
 }
 
 // ============================================================================
-// Skill File Handling
-// ============================================================================
-
-const SKILL_MAPPINGS = [
-  { template: 'cursor.md', target: '.cursorrules', name: 'Cursor' },
-  { template: 'claude-code.md', target: 'CLAUDE.md', name: 'Claude Code' },
-  { template: 'open-code.md', target: 'AGENTS.md', name: 'Open Code' },
-  { template: 'generic.md', target: '.ai/instructions.md', name: 'Generic' },
-];
-
-const SKILLS_DIR = resolve(__dirname, '../../skills');
-
-function handleExistingSkillFile(
-  rl: ReturnType<typeof createInterface>,
-  targetPath: string,
-  targetName: string
-): Promise<'overwrite' | 'append' | 'skip'> {
-  return new Promise(async (resolve) => {
-    console.log(`\n⚠️  Existing ${targetName} detected.`);
-    const choice = await promptChoice(rl, `How to handle?`, ['Overwrite', 'Append', 'Skip'], 0);
-    resolve(choice === 0 ? 'overwrite' : choice === 1 ? 'append' : 'skip');
-  });
-}
-
-async function generateSkillFiles(
-  cwd: string,
-  rl: ReturnType<typeof createInterface>,
-  force: boolean
-): Promise<void> {
-  console.log('\n📄 Agent Skills\n');
-
-  for (const mapping of SKILL_MAPPINGS) {
-    const targetPath = join(cwd, mapping.target);
-    const templatePath = join(SKILLS_DIR, mapping.template);
-
-    if (!existsSync(templatePath)) {
-      console.log(`  ⚠  Template not found: ${mapping.template}`);
-      continue;
-    }
-
-    const templateContent = readFileSync(templatePath, 'utf-8');
-
-    if (existsSync(targetPath)) {
-      if (force) {
-        writeFileSync(targetPath, templateContent);
-        console.log(`  ✓  Overwrote: ${mapping.target}`);
-        continue;
-      }
-
-      const action = await handleExistingSkillFile(rl, targetPath, mapping.name);
-      if (action === 'skip') {
-        console.log(`  ⏭  Skipped: ${mapping.target}`);
-        continue;
-      }
-
-      if (action === 'append') {
-        const existing = readFileSync(targetPath, 'utf-8');
-        writeFileSync(targetPath, existing + '\n\n' + templateContent);
-        console.log(`  ✓  Appended to: ${mapping.target}`);
-      } else {
-        writeFileSync(targetPath, templateContent);
-        console.log(`  ✓  Overwrote: ${mapping.target}`);
-      }
-    } else {
-      // Create parent directory if needed (for .ai/instructions.md)
-      const targetDir = dirname(targetPath);
-      if (!existsSync(targetDir)) {
-        mkdirSync(targetDir, { recursive: true });
-      }
-      writeFileSync(targetPath, templateContent);
-      console.log(`  ✓  Created: ${mapping.target}`);
-    }
-  }
-}
-
-// ============================================================================
 // Preset Distribution
 // ============================================================================
 
@@ -479,18 +404,22 @@ function writeConfig(cwd: string, options: WizardOptions, isEdit: boolean): void
   console.log(`   ✓ ${isEdit ? 'Updated' : 'Created'} .open-review/config.yml`);
 }
 
-function printNextSteps(isEdit: boolean): void {
+function printNextSteps(isEdit: boolean, skillsInstalled: boolean): void {
   console.log('\n' + '='.repeat(50));
   console.log(`${isEdit ? '✅ Updated' : '✅ Created'}!\n`);
 
-  if (!process.env.OPEN_REVIEW_API_KEY) {
-    console.log('Next steps:\n');
-    console.log('1. Set your API key:');
-    console.log('   export OPEN_REVIEW_API_KEY=your_key_here');
+  if (skillsInstalled) {
+    console.log('Agent review:');
+    console.log('   Invoke /review in your configured agent, or ask the agent to review the current changes.');
     console.log('');
   }
 
-  console.log('Run a review:');
+  console.log('Standalone CLI review:');
+  if (!process.env.OPEN_REVIEW_API_KEY) {
+    console.log('   Set your API key:');
+    console.log('   export OPEN_REVIEW_API_KEY=your_key_here');
+    console.log('');
+  }
   console.log('   open-review review --diff main');
   console.log('');
 }
@@ -522,7 +451,8 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
   }
 
   writeConfig(cwd, options, isEdit);
-  printNextSteps(isEdit);
+  await installSkills(cwd, { force: flags.force, interactive: false });
+  printNextSteps(isEdit, true);
 }
 
 // ============================================================================
@@ -596,9 +526,7 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
 
   // Generate skill files
   if (options.generateSkills) {
-    const rl2 = createInterface({ input: process.stdin, output: process.stdout });
-    await generateSkillFiles(cwd, rl2, flags.force);
-    rl2.close();
+    await installSkills(cwd, { force: flags.force });
   }
 
   // Generate GitHub Action workflow
@@ -618,5 +546,5 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
     }
   }
 
-  printNextSteps(isEdit);
+  printNextSteps(isEdit, options.generateSkills);
 }

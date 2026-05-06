@@ -10,7 +10,7 @@ Open Review is not just a code review tool. It provides a structured reasoning p
 |---|---|---|
 | **CI/CD** | No agent present | Harness runs automated reviews via GitHub Action |
 | **Local CLI** | Developer wants quick check | Harness script for terminal use |
-| **Existing Agent** | Developer uses Cursor/Claude Code/Open Code | Methodology as agent instructions (skill) |
+| **Existing Agent** | Developer uses Cursor/Claude Code/OpenCode/Codex/Gemini/Windsurf | Agent skill installed into the host runtime |
 
 ## Quick Start
 
@@ -21,7 +21,7 @@ npm install -g open-review
 open-review review --diff main
 ```
 
-Works immediately with built-in methodology, auto-detected presets, and default settings.
+Works with built-in methodology, auto-detected presets, and default settings after `OPEN_REVIEW_API_KEY` is set.
 
 ### With Init Wizard
 
@@ -33,7 +33,7 @@ open-review init
 This creates:
 - `.open-review/config.yml` — Configuration file
 - `.open-review/presets/` — Framework-specific presets (if detected)
-- Agent skill files (`.cursorrules`, `CLAUDE.md`, `AGENTS.md`)
+- Agent skills and host commands, when selected
 - `.github/workflows/open-review.yml` — GitHub Action workflow
 
 ### Set API Key
@@ -114,14 +114,28 @@ open-review review --diff main --prompt "Focus on authentication"
 
 ## Agent Skills
 
-Open Review generates thin skill files that point to your config:
+Open Review installs a real agent skill for local agent workflows. The current agent performs the review with its own tools and context.
 
-- `.cursorrules` — For Cursor
-- `CLAUDE.md` — For Claude Code
-- `AGENTS.md` — For Open Code
-- `.ai/instructions.md` — Generic
+```bash
+open-review skills install
+open-review skills status
+open-review skills update
+open-review skills remove
+```
 
-Skills are identical across projects. The agent reads the skill, reads the config, and executes the review.
+The shared skill definition is installed at:
+
+- `.agents/skills/open-review/SKILL.md`
+
+Host-specific adapters can also install native locations:
+
+- `.claude/skills/open-review/SKILL.md` — Claude Code
+- `.opencode/skills/open-review/SKILL.md` and `.opencode/commands/review.md` — OpenCode
+- `.gemini/skills/open-review/SKILL.md` and `.gemini/commands/review.toml` — Gemini CLI
+- `.windsurf/skills/open-review/SKILL.md` and `.windsurf/workflows/review.md` — Windsurf
+- `.cursor/rules/open-review.mdc` — Cursor
+
+Skill installation state lives in `.open-review/skills.yml`. The default slash command name is `review` where the host supports project commands.
 
 ## Presets
 
