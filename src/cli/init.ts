@@ -8,9 +8,10 @@
  */
 
 import { createInterface } from 'readline';
-import { existsSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
+import { existsSync, writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { parse as parseYaml } from 'yaml';
 import { loadConfigFromFile } from '../config/loader.js';
 import { DEFAULT_CONFIG, type ResolvedConfig } from '../config/schema.js';
 import { installSkills } from './skills.js';
@@ -54,6 +55,8 @@ interface WizardOptions {
   presets: string[];
   conventions: string;
   output: OutputSettings;
+  configureLlm: boolean;
+  configureOutput: boolean;
   generateSkills: boolean;
   generateAction: boolean;
 }
@@ -63,6 +66,11 @@ interface InitFlags {
   provider?: Provider;
   model?: string;
   force: boolean;
+}
+
+interface ExistingConfigSections {
+  llm: boolean;
+  output: boolean;
 }
 
 export function parseInitArgs(args: string[]): InitFlags {
@@ -284,30 +292,33 @@ function generateConfig(options: WizardOptions): string {
     lines.push(`  conventions: auto`);
   }
 
-  // LLM section
-  lines.push('', '# LLM Settings', 'llm:');
-  lines.push(`  provider: ${options.provider}`);
-  lines.push(`  model: ${options.model}`);
+  if (options.configureLlm) {
+    lines.push('', '# LLM Settings', 'llm:');
+    lines.push(`  provider: ${options.provider}`);
+    lines.push(`  model: ${options.model}`);
+  }
 
   // Output section (only if non-defaults)
   const defaultOutput = DEFAULT_CONFIG.output;
   const out = options.output;
   const outputLines: string[] = [];
 
-  if (out.format !== defaultOutput.format) {
-    outputLines.push(`  format: ${out.format}`);
-  }
-  if (out.colors !== defaultOutput.colors) {
-    outputLines.push(`  colors: ${out.colors}`);
-  }
-  if (out.timezone !== defaultOutput.timezone) {
-    outputLines.push(`  timezone: ${out.timezone}`);
-  }
-  if (out.path) {
-    outputLines.push(`  path: ${out.path}`);
+  if (options.configureOutput) {
+    if (out.format !== defaultOutput.format) {
+      outputLines.push(`  format: ${out.format}`);
+    }
+    if (out.colors !== defaultOutput.colors) {
+      outputLines.push(`  colors: ${out.colors}`);
+    }
+    if (out.timezone !== defaultOutput.timezone) {
+      outputLines.push(`  timezone: ${out.timezone}`);
+    }
+    if (out.path) {
+      outputLines.push(`  path: ${out.path}`);
+    }
   }
 
-  if (outputLines.length > 0) {
+  if (options.configureOutput && outputLines.length > 0) {
     lines.push('', 'output:');
     lines.push(...outputLines);
   }
@@ -320,7 +331,10 @@ function generateConfig(options: WizardOptions): string {
 // Resolve Options from Config or Defaults
 // ============================================================================
 
-function buildOptionsFromConfig(config: ResolvedConfig): WizardOptions {
+function buildOptionsFromConfig(
+  config: ResolvedConfig,
+  existingSections: ExistingConfigSections = { llm: false, output: false }
+): WizardOptions {
   const presets = config.review.presets === 'auto' ? [] : config.review.presets;
   const conventions = config.review.conventions === 'auto' ? '' : config.review.conventions;
 
@@ -346,9 +360,28 @@ function buildOptionsFromConfig(config: ResolvedConfig): WizardOptions {
         hold: { ...config.output.verdicts.hold },
       },
     },
+    configureLlm: existingSections.llm,
+    configureOutput: existingSections.output,
     generateSkills: false,
     generateAction: false,
   };
+}
+
+function detectExistingConfigSections(cwd: string): ExistingConfigSections {
+  const configPath = join(cwd, '.open-review', 'config.yml');
+  if (!existsSync(configPath)) {
+    return { llm: false, output: false };
+  }
+
+  try {
+    const parsed = parseYaml(readFileSync(configPath, 'utf-8')) as Record<string, unknown> | null;
+    return {
+      llm: !!parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, 'llm'),
+      output: !!parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, 'output'),
+    };
+  } catch {
+    return { llm: false, output: false };
+  }
 }
 
 // ============================================================================
@@ -404,7 +437,12 @@ function writeConfig(cwd: string, options: WizardOptions, isEdit: boolean): void
   console.log(`   ✓ ${isEdit ? 'Updated' : 'Created'} .open-review/config.yml`);
 }
 
-function printNextSteps(isEdit: boolean, skillsInstalled: boolean): void {
+function printNextSteps(
+  isEdit: boolean,
+  skillsInstalled: boolean,
+  actionInstalled: boolean,
+  standaloneConfigured: boolean
+): void {
   console.log('\n' + '='.repeat(50));
   console.log(`${isEdit ? '✅ Updated' : '✅ Created'}!\n`);
 
@@ -414,14 +452,22 @@ function printNextSteps(isEdit: boolean, skillsInstalled: boolean): void {
     console.log('');
   }
 
-  console.log('Standalone CLI review:');
-  if (!process.env.OPEN_REVIEW_API_KEY) {
-    console.log('   Set your API key:');
-    console.log('   export OPEN_REVIEW_API_KEY=your_key_here');
+  if (actionInstalled) {
+    console.log('GitHub Action review:');
+    console.log('   Add repository secret: OPEN_REVIEW_API_KEY');
     console.log('');
   }
-  console.log('   open-review review --diff main');
-  console.log('');
+
+  if (standaloneConfigured) {
+    console.log('Standalone CLI review:');
+    if (!process.env.OPEN_REVIEW_API_KEY) {
+      console.log('   Set your API key:');
+      console.log('   export OPEN_REVIEW_API_KEY=your_key_here');
+      console.log('');
+    }
+    console.log('   open-review review --diff main');
+    console.log('');
+  }
 }
 
 // ============================================================================
@@ -432,7 +478,7 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
   console.log(`\n🔧 Open Review ${isEdit ? 'Update' : 'Setup'} (quick)\n`);
 
   const { config } = loadConfigFromFile(cwd);
-  const options = buildOptionsFromConfig(config);
+  const options = buildOptionsFromConfig(config, detectExistingConfigSections(cwd));
 
   if (flags.provider) {
     const providerChanged = flags.provider !== options.provider;
@@ -443,6 +489,10 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
   }
   if (flags.model) options.model = flags.model;
 
+  options.generateSkills = true;
+  options.generateAction = false;
+  options.configureLlm = options.configureLlm || !!flags.provider || !!flags.model;
+
   // Auto-detect presets
   const detected = detectFrameworks(cwd);
   if (detected.length > 0) {
@@ -452,7 +502,7 @@ async function runQuickInit(cwd: string, flags: InitFlags, isEdit: boolean): Pro
 
   writeConfig(cwd, options, isEdit);
   await installSkills(cwd, { force: flags.force, interactive: false });
-  printNextSteps(isEdit, true);
+  printNextSteps(isEdit, true, false, false);
 }
 
 // ============================================================================
@@ -471,8 +521,9 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
   // Load existing config or defaults
+  const existingSections = detectExistingConfigSections(cwd);
   const { config: fileConfig } = loadConfigFromFile(cwd);
-  const options = buildOptionsFromConfig(fileConfig);
+  const options = buildOptionsFromConfig(fileConfig, existingSections);
 
   console.log('\n🔧 Open Review Setup\n');
 
@@ -493,23 +544,29 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
     }
   }
 
-  // Step 2: Provider
-  options.provider = await promptProvider(rl, options.provider);
+  // Step 2: Setup surfaces
+  console.log('\nSetup options');
+  options.generateSkills = await promptYesNo(rl, 'Install agent skills?', true);
+  options.generateAction = await promptYesNo(rl, 'Install GitHub Action?', true);
+  const configureStandaloneCli = await promptYesNo(rl, 'Configure standalone local CLI review?', false);
 
-  // Step 3: Model
-  options.model = await promptModel(rl, options.provider, options.model);
+  options.configureLlm = existingSections.llm || options.generateAction || configureStandaloneCli;
+  options.configureOutput = existingSections.output || options.generateAction;
+
+  // Step 3: LLM settings, only for harness-driven surfaces
+  if (options.configureLlm) {
+    console.log('\nLLM settings are used by GitHub Action and standalone CLI review.');
+    options.provider = await promptProvider(rl, options.provider);
+    options.model = await promptModel(rl, options.provider, options.model);
+  }
 
   // Step 4: Generate config file
   const generateConfigFile = await promptYesNo(rl, 'Generate config file?', true);
 
-  // Step 5: Install agent skills
-  options.generateSkills = await promptYesNo(rl, 'Install agent skills?', true);
-
-  // Step 6: Install GitHub Action
-  options.generateAction = await promptYesNo(rl, 'Install GitHub Action?', true);
-
-  // Step 7: Timezone
-  options.output.timezone = await promptTimezone(rl, options.output.timezone);
+  // Step 5: Timezone, only for gateway/hosted output surfaces
+  if (options.generateAction) {
+    options.output.timezone = await promptTimezone(rl, options.output.timezone);
+  }
 
   rl.close();
 
@@ -546,5 +603,5 @@ export async function runInit(cwd: string = process.cwd(), flags: InitFlags = { 
     }
   }
 
-  printNextSteps(isEdit, options.generateSkills);
+  printNextSteps(isEdit, options.generateSkills, options.generateAction, configureStandaloneCli);
 }
