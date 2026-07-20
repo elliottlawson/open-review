@@ -4,6 +4,7 @@
 
 export { formatForAgent, toJSON } from './agent.js';
 export { formatForHuman } from './human.js';
+export { formatReviewFooterMarkdown, formatReviewFooterHuman } from './review-footer.js';
 export {
   renderComment,
   renderInlineComment,
