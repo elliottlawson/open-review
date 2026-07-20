@@ -51,7 +51,17 @@ export interface VerdictLabelConfig {
   label: string;
 }
 
+export interface ReviewCommitRef {
+  sha: string;
+  shortSha: string;
+  url?: string;
+}
 
+export interface ReviewRunContext {
+  commit?: ReviewCommitRef;
+  version?: number;
+  reviewedAt?: string;
+}
 
 export interface PRFile {
   path: string;
@@ -84,6 +94,7 @@ export interface CommentMetadata {
   status: 'active' | 'resolved' | 'whitelisted';
   createdAt: string;
   lastCommit: string;
+  reviewVersion?: number;
   filePath?: string;
   line?: number;
   category?: string; // e.g., 'security', 'performance', 'style'

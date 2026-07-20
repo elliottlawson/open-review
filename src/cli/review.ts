@@ -10,9 +10,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { runReview, type ReviewInput } from '../core/agent.js';
+import { resolveCommitRef } from '../core/git.js';
+import type { ReviewRunContext } from '../core/types.js';
 import { formatForHuman } from '../output/human.js';
 import { toJSON } from '../output/agent.js';
-import { renderComment } from '../output/comment-template.js';
+import { renderComment, createTemplateConfigFromOutputConfig } from '../output/comment-template.js';
 import { loadConfigFromFile, loadConfigFromString, type LoadConfigResult } from '../config/loader.js';
 import type { ResolvedConfig } from '../config/schema.js';
 
@@ -408,14 +410,23 @@ export async function handleReview(args: ReviewArgs): Promise<void> {
       outputFormat = args.format === 'json' ? 'json' : 'human';
     }
 
+    const resolvedCommit = resolveCommitRef(args.path);
+    const reviewContext: ReviewRunContext | undefined = resolvedCommit
+      ? { commit: resolvedCommit, reviewedAt: new Date().toISOString() }
+      : undefined;
+
     // Generate output content
     let outputContent: string;
     if (outputFormat === 'json') {
-      outputContent = toJSON(result, true, outputConfig);
+      outputContent = toJSON(result, true, outputConfig, reviewContext);
     } else if (outputFormat === 'markdown') {
-      outputContent = renderComment({ result });
+      outputContent = renderComment({
+        result,
+        config: createTemplateConfigFromOutputConfig(outputConfig),
+        context: reviewContext,
+      });
     } else {
-      outputContent = formatForHuman(result, outputConfig);
+      outputContent = formatForHuman(result, outputConfig, reviewContext);
     }
 
     // Write output

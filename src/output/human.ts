@@ -4,7 +4,8 @@
  * Terminal-friendly output that mirrors GitHub review style.
  */
 
-import type { ReviewResult, ReviewFinding, OutputConfig } from '../core/types.js';
+import type { ReviewResult, ReviewFinding, OutputConfig, ReviewRunContext } from '../core/types.js';
+import { formatReviewFooterHuman } from './review-footer.js';
 
 // ANSI colors
 const colors = {
@@ -108,7 +109,11 @@ function groupByType(findings: ReviewFinding[]): Map<string, ReviewFinding[]> {
   return groups;
 }
 
-export function formatForHuman(result: ReviewResult, config?: OutputConfig): string {
+export function formatForHuman(
+  result: ReviewResult,
+  config?: OutputConfig,
+  context?: ReviewRunContext
+): string {
   // Initialize color setting
   useColors = config ? shouldUseColors(config.colors) : process.stdout.isTTY;
   
@@ -201,6 +206,13 @@ export function formatForHuman(result: ReviewResult, config?: OutputConfig): str
 
   // Footer
   lines.push(c('dim', '───────────────────────────────────────────────────────────────'));
+  const reviewFooter = formatReviewFooterHuman(context, config?.timezone);
+  if (reviewFooter) {
+    lines.push(c('dim', `  ${reviewFooter}`));
+    if (context?.commit?.url) {
+      lines.push(c('dim', `  ${context.commit.url}`));
+    }
+  }
   lines.push(c('dim', `  Tokens used: ${result.tokensUsed.toLocaleString()}`));
   lines.push('');
 

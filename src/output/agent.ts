@@ -5,7 +5,7 @@
  * Preserves all fields from ReviewFinding for downstream formatters.
  */
 
-import type { ReviewResult, ReviewFinding, OutputConfig } from '../core/types.js';
+import type { ReviewResult, ReviewFinding, OutputConfig, ReviewRunContext } from '../core/types.js';
 
 export interface AgentSectionSummaries {
   mustFix?: string;
@@ -23,11 +23,20 @@ export interface AgentVerdictConfig {
   label: string;
 }
 
+export interface AgentCommitRef {
+  sha: string;
+  shortSha: string;
+  url?: string;
+}
+
 export interface AgentOutput {
   verdict: 'approve' | 'changes_needed' | 'hold';
   summary: string;
   findings: AgentFinding[];
   sectionSummaries?: AgentSectionSummaries;
+  commit?: AgentCommitRef;
+  version?: number;
+  reviewedAt?: string;
   sections?: {
     must_fix: AgentSectionConfig;
     should_fix: AgentSectionConfig;
@@ -65,7 +74,11 @@ export interface AgentFinding {
   suggestedFix?: string;
 }
 
-export function formatForAgent(result: ReviewResult, config?: OutputConfig): AgentOutput {
+export function formatForAgent(
+  result: ReviewResult,
+  config?: OutputConfig,
+  context?: ReviewRunContext
+): AgentOutput {
   const findings: AgentFinding[] = result.findings
     .map(f => ({
       id: f.id,
@@ -92,6 +105,22 @@ export function formatForAgent(result: ReviewResult, config?: OutputConfig): Age
     },
   };
 
+  if (context?.commit) {
+    output.commit = {
+      sha: context.commit.sha,
+      shortSha: context.commit.shortSha,
+      url: context.commit.url,
+    };
+  }
+
+  if (context?.version !== undefined) {
+    output.version = context.version;
+  }
+
+  if (context?.reviewedAt) {
+    output.reviewedAt = context.reviewedAt;
+  }
+
   if (config) {
     output.sections = {
       must_fix: { enabled: config.sections.must_fix.enabled, collapse: config.sections.must_fix.collapse },
@@ -114,8 +143,13 @@ export function formatForAgent(result: ReviewResult, config?: OutputConfig): Age
   return output;
 }
 
-export function toJSON(result: ReviewResult, pretty = false, config?: OutputConfig): string {
-  const output = formatForAgent(result, config);
+export function toJSON(
+  result: ReviewResult,
+  pretty = false,
+  config?: OutputConfig,
+  context?: ReviewRunContext
+): string {
+  const output = formatForAgent(result, config, context);
   return pretty ? JSON.stringify(output, null, 2) : JSON.stringify(output);
 }
 

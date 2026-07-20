@@ -8,7 +8,8 @@
  */
 
 import { Octokit } from '@octokit/rest';
-import type { ReviewFinding } from '../core/types.js';
+import { resolveCommitRef, buildGitHubCommitUrl } from '../core/git.js';
+import type { ReviewFinding, ReviewRunContext } from '../core/types.js';
 
 // ============================================================================
 // Constants
@@ -60,6 +61,7 @@ export interface CommentMetadata {
   status: 'active' | 'resolved';
   createdAt: string;
   lastCommit: string;
+  reviewVersion?: number;
   filePath?: string;
   line?: number;
   category?: string;
@@ -176,10 +178,34 @@ export class GitHubConnector {
     return comments;
   }
 
+  buildReviewContext(
+    headSha: string,
+    owner: string,
+    repo: string,
+    existingComments: ReviewComment[],
+  ): ReviewRunContext {
+    const existingSummary = existingComments.find(
+      c => c.isOurs && c.metadata?.type === 'summary'
+    );
+    const version = existingSummary?.metadata?.reviewVersion
+      ? existingSummary.metadata.reviewVersion + 1
+      : 1;
+
+    return {
+      commit: {
+        sha: headSha,
+        shortSha: headSha.slice(0, 7),
+        url: buildGitHubCommitUrl(owner, repo, headSha),
+      },
+      version,
+      reviewedAt: new Date().toISOString(),
+    };
+  }
+
   /**
-   * Post or update the summary comment
-   * If a summary comment already exists, updates it in place
-   * Otherwise creates a new one
+   * Post or update the summary comment.
+   * If a summary comment already exists, updates it in place.
+   * Otherwise creates a new one.
    */
   async postSummaryComment(
     owner: string,
@@ -188,13 +214,16 @@ export class GitHubConnector {
     headSha: string,
     content: string,
     reviewId: string,
-    isReReview: boolean,
   ): Promise<number> {
     // Check for existing summary comment
     const existing = await this.getExistingComments(owner, repo, prNumber);
     const existingSummary = existing.find(
       c => c.isOurs && c.metadata?.type === 'summary'
     );
+
+    const reviewVersion = existingSummary?.metadata?.reviewVersion
+      ? existingSummary.metadata.reviewVersion + 1
+      : 1;
 
     const metadata: CommentMetadata = {
       reviewId,
@@ -203,6 +232,7 @@ export class GitHubConnector {
       status: 'active',
       createdAt: existingSummary?.metadata?.createdAt || new Date().toISOString(),
       lastCommit: headSha,
+      reviewVersion,
     };
 
     const body = this.formatComment(metadata, content);

@@ -14,7 +14,8 @@
  * 4. GitHub-compatible output is the constraint we design within
  */
 
-import type { ReviewFinding, ReviewResult, OutputConfig } from '../core/types.js';
+import type { ReviewFinding, ReviewResult, OutputConfig, ReviewRunContext } from '../core/types.js';
+import { formatReviewFooterMarkdown } from './review-footer.js';
 
 // ============================================================================
 // Configuration Types
@@ -354,32 +355,18 @@ function FeedbackSection(config?: SectionConfig): string {
   return '';
 }
 
-/** ⑥ FOOTER - Timestamp only, ALWAYS LAST */
+/** ⑥ FOOTER - Review version, commit, and timestamp — ALWAYS LAST */
 function FooterSection(
-  isReReview: boolean,
   config: CommentTemplateConfig['footer'],
-  timezone?: string
+  timezone?: string,
+  context?: ReviewRunContext
 ): string {
   if (!config.enabled) return '';
 
-  const parts: string[] = ['\n---\n'];
+  const footer = formatReviewFooterMarkdown(context, timezone);
+  if (!footer) return '';
 
-  // Timestamp (always shown on re-reviews)
-  if (isReReview) {
-    const now = new Date();
-    const formatted = now.toLocaleString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: timezone || 'America/New_York',
-    });
-    parts.push(`${Icons.clock}${muted(`Last updated: ${formatted}`)}`);
-  }
-
-  return parts.join('');
+  return `\n---\n\n${Icons.clock}${muted(footer)}`;
 }
 
 // ============================================================================
@@ -391,7 +378,7 @@ export interface RenderCommentOptions {
   config?: CommentTemplateConfig;
   /** Review state: progress | error | complete */
   state?: 'progress' | 'error' | 'complete';
-  isReReview?: boolean;
+  context?: ReviewRunContext;
 }
 
 /**
@@ -406,7 +393,7 @@ export function renderComment(options: RenderCommentOptions): string {
     result,
     config = DEFAULT_TEMPLATE_CONFIG,
     state = 'complete', // 'progress' | 'error' | 'complete'
-    isReReview = false,
+    context,
   } = options;
 
   const parts: string[] = [];
@@ -450,7 +437,7 @@ export function renderComment(options: RenderCommentOptions): string {
   }
 
   // ⑩ FOOTER (ALWAYS LAST)
-  parts.push(FooterSection(isReReview, config.footer, config.timezone));
+  parts.push(FooterSection(config.footer, config.timezone, context));
 
   return parts.join('');
 }
