@@ -12,7 +12,7 @@ Set up the GitHub Actions workflow that runs open-review on every pull request i
 
 ## What this does
 
-Writes `.github/workflows/open-review.yml` from the bundled template (`workflow-template.yml` in this skill's directory), configured from your answers. The workflow runs the `review-json` skill via opencode on every PR and posts the review as a comment.
+Writes `.github/workflows/open-review.yml` from the bundled template (`workflow-template.yml` in this skill's directory), configured from your answers. The workflow runs the `review-output-json` skill via opencode on every PR and posts the review as a comment.
 
 ## Step 1 — Check what's here
 

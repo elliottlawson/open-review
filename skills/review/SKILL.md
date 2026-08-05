@@ -37,4 +37,4 @@ Then weigh the passes into a verdict:
 
 **Verify before you flag.** A finding must point at a concrete line and a concrete consequence. If you can't verify it, ask a question instead.
 
-Report your findings in prose — severity (critical / warning / info), the pass that found it, the file and line, and why it matters. If you're running under CI, the `review-json` skill wraps this review and shapes the output as JSON instead.
+Report your findings in prose — severity (critical / warning / info), the pass that found it, the file and line, and why it matters. If you're running under CI, the `review-output-json` skill wraps this review and shapes the output as JSON instead.
