@@ -38,7 +38,9 @@ Instead of a prose report, emit the result as a single JSON object:
   },
   "sectionSummaries": {
     "mustFix": "1-2 sentences on the critical findings, if any.",
-    "shouldFix": "1-2 sentences on the warnings, if any."
+    "shouldFix": "1-2 sentences on the warnings, if any.",
+    "questions": "1-2 sentences on the questions, if any.",
+    "suggestions": "1-2 sentences on the suggestions, if any."
   }
 }
 ```

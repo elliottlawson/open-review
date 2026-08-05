@@ -22,10 +22,10 @@ jobs:
       - name: Open Review
         uses: elliottlawson/open-review-action@v1
         with:
-          # Provider and model (optional - defaults to anthropic/claude-sonnet-4)
+          # Provider and model (optional - defaults to openrouter/moonshotai/kimi-k2.6)
           # Options: anthropic, openai, openrouter
-          provider: anthropic
-          model: claude-sonnet-4-20250514
+          provider: openrouter
+          model: moonshotai/kimi-k2.6
           api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}
           
           # Ephemeral focus for this review only (optional)
