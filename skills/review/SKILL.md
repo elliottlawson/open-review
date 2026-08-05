@@ -36,3 +36,5 @@ Then weigh the passes into a verdict:
 **Depth calibration.** Match depth to scope — a 2-file bugfix is brief; a 30-file feature gets deep coverage.
 
 **Verify before you flag.** A finding must point at a concrete line and a concrete consequence. If you can't verify it, ask a question instead.
+
+Report your findings in prose — severity (critical / warning / info), the pass that found it, the file and line, and why it matters. If you're running under CI, the `review-json` skill wraps this review and shapes the output as JSON instead.
