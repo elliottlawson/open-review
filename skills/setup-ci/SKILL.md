@@ -21,11 +21,11 @@ Writes `.github/workflows/open-review.yml` from the bundled template (`workflow-
 
 ## Step 2 — Ask
 
-Ask only what's needed:
+Every question ships with a recommended default — state it and offer to keep it. We have an opinion; the user can override, but never faces a blank choice.
 
 - **Provider and model.** Default: `openrouter` + `moonshotai/kimi-k2.6`. Alternatives: `anthropic` + `claude-sonnet-4`, `openai`, or any OpenRouter model.
 - **Sections.** All four on by default (must-fix, should-fix, suggestions, questions). Turn any off?
-- **Verdict labels.** Defaults: LGTM / CHANGES REQUESTED / HOLD. Customize?
+- **Verdict labels.** Defaults: LGTM / Changes Needed / Hold. Customize?
 
 Keep it to these. Don't re-ask what the template already defaults sensibly.
 
@@ -33,13 +33,19 @@ Keep it to these. Don't re-ask what the template already defaults sensibly.
 
 Create `.github/workflows/open-review.yml` from `workflow-template.yml`, filling in the answers. Uncomment only the options the user changed; leave the rest commented so the file documents itself.
 
-## Step 4 — Tell them about the secret
+## Step 4 — The API key secret
 
-The workflow needs an API key. Tell the user:
+The workflow needs an API key. Confirm which secret name to use — the options follow from the provider chosen in Step 2:
 
-> Add your provider API key as a repository secret named `OPEN_REVIEW_API_KEY` (Settings → Secrets and variables → Actions). For OpenRouter, that's your OpenRouter key.
+1. **`OPEN_REVIEW_API_KEY`** (recommended) — one name, provider-agnostic; matches the template as written.
+2. **The provider's conventional name** — `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. — if they'd rather reuse a secret they already have.
+3. **A custom name** — whatever they already have in place.
 
-Offer to set it via `gh secret set OPEN_REVIEW_API_KEY` if they have the key handy.
+Whichever they pick goes on the workflow's `api_key:` line as `${{ secrets.<NAME> }}`. Then tell them:
+
+> Add the key as a repository secret named `<NAME>` (Settings → Secrets and variables → Actions).
+
+Offer to set it via `gh secret set <NAME>` if they have the key handy.
 
 ## Step 5 — Commit
 
