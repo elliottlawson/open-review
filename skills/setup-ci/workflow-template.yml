@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0
 
       - name: Open Review
-        uses: elliottlawson/open-review-action@v1
+        uses: elliottlawson/open-review-action@v2
         with:
           # Provider and model (optional - defaults to openrouter/moonshotai/kimi-k2.6)
           # Options: anthropic, openai, openrouter
