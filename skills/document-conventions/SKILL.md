@@ -16,7 +16,7 @@ The review skill works out of the box by auto-discovering your standards. This m
 
 ## Step 1 — Discover
 
-Run the `infer-conventions` skill and record what it finds — agent instructions, docs indexes, conventions, architecture docs, and the stack.
+Run `/infer-conventions` and record what it finds.
 
 ## Step 2 — Confirm with the user
 

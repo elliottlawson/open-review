@@ -16,9 +16,9 @@ The change is the diff against the merge-base with the base branch (`git diff or
 
 ## Step 0 — Find the project's reference material
 
-Before judging anything, know where this project keeps its decisions and standards. Run the `infer-conventions` skill — it maps where this project's standards live and what its stack is. Read what it points to, and use those paths throughout the passes. If the project has no documented standards, say so in the verdict instead of inventing any.
+Before judging anything, know where this project keeps its decisions and standards. Run `/infer-conventions`; read what it points to, and use those paths throughout the passes. If the project has no documented standards, say so in the verdict instead of inventing any.
 
-Passes load framework conventions packs on demand via the `load-conventions` skill — mostly implementation and craft. A change that touches no framework domain loads none.
+Passes load framework conventions packs on demand via `/load-conventions` — mostly implementation and craft.
 
 Run: mission → architecture → implementation → craft → security → performance.
 
@@ -40,4 +40,4 @@ Report your findings in prose — severity (critical / warning / info), the pass
 - **Cite the standard, state the target pattern.** When the project has documented standards, name the doc a finding violates and the pattern to follow instead.
 - **Report repeated issues once.** The same issue across multiple files is one finding — note that it applies broadly.
 
-If you're running under CI, the `review-as-json` skill wraps this review and shapes the output as JSON instead.
+If you're running under CI, `/review-as-json` wraps this review and shapes the output as JSON instead.

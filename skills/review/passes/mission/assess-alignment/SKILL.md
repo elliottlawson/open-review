@@ -1,6 +1,6 @@
 ---
-name: assess
-description: Judges whether the work in scope achieves the target uncover established.
+name: assess-alignment
+description: Judges whether the work in scope achieves the target.
 license: MIT
 metadata:
   version: "1"
