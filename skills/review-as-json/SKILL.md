@@ -1,6 +1,6 @@
 ---
-name: review-output-json
-description: Runs the review skill and emits the result as a single structured JSON object. Used by CI; use the `review` skill directly for human-facing reviews.
+name: review-as-json
+description: The review, as JSON — runs the review skill and emits the result as a single structured JSON object. Used by CI; use the `review` skill directly for human-facing reviews.
 license: MIT
 metadata:
   version: "1"

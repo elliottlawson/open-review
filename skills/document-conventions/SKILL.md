@@ -1,9 +1,9 @@
 ---
-name: review-setup
-description: Sets up the review skill for this project — discovers where your standards live, confirms them with you, writes a committed REVIEW.md, and optionally wires automatic reviews. Run once per project, re-run to amend.
+name: document-conventions
+description: Documents a project's conventions — discovers where your standards live, confirms them with you, and writes a committed REVIEW.md table of contents so future reviews judge against your real standards. Optional; run once per project, re-run to amend.
 license: MIT
 metadata:
-  version: "2"
+  version: "1"
 ---
 
 # Review setup
@@ -51,7 +51,7 @@ Example shape (adapt to what the project actually has — do not include section
 # <Project> Review Brief
 
 Tells the review skill where this project keeps its standards. Each pass reads
-the docs mapped below. Edit by hand, or re-run `/review-setup` to regenerate.
+the docs mapped below. Edit by hand, or re-run `/document-conventions` to regenerate.
 
 ## Stack
 
