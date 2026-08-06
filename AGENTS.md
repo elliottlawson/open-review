@@ -36,14 +36,7 @@ skills directly. The old Mastra CLI engine (`src/`, `methodology/`, `presets/`) 
 
 - **open-review-action** — the CI engine. Installs opencode + the skills per run,
   executes `review-as-json` against the PR diff, formats and posts the comment.
-  Workflow files reference `elliottlawson/open-review-action@v1`.
-
-## Legacy (do not extend)
-
-`src/core/agent.ts`, `methodology/`, `presets/`, `src/config/` — the Mastra CLI
-engine. Kept working until retired; all new behavior lands in the skills.
-`npm run build` / `npx tsx src/cli/index.ts review --diff main --json` still work
-against the old engine.
+  Workflow files reference `elliottlawson/open-review-action@v2`.
 
 ## Backlog
 

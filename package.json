@@ -1,64 +1,12 @@
 {
   "name": "@elliottlawson/open-review",
   "version": "0.2.0",
-  "description": "AI-powered PR code review tool - automated code reviews using Claude or GPT",
-  "main": "dist/index.js",
-  "type": "module",
-  "bin": {
-    "open-review": "./dist/cli/index.js"
-  },
-  "files": [
-    "dist",
-    "templates",
-    "methodology",
-    "presets",
-    "skills"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "prepare": "npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "code-review",
-    "ai",
-    "llm",
-    "github",
-    "pull-request",
-    "automation",
-    "claude",
-    "gpt",
-    "anthropic",
-    "openai"
-  ],
-  "author": "Elliott Lawson",
+  "description": "Composable, skill-based code review — agents run the skills; the skills are the product.",
   "license": "MIT",
+  "private": true,
+  "author": "Elliott Lawson",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/elliottlawson/open-review.git"
-  },
-  "bugs": {
-    "url": "https://github.com/elliottlawson/open-review/issues"
-  },
-  "homepage": "https://github.com/elliottlawson/open-review#readme",
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.69",
-    "@ai-sdk/openai": "^3.0.53",
-    "@linear/sdk": "^81.0.0",
-    "@mastra/core": "^1.25.0",
-    "@mastra/memory": "^1.15.1",
-    "@octokit/rest": "^22.0.1",
-    "ai": "^6.0.162",
-    "dotenv": "^17.4.2",
-    "yaml": "^2.8.3",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@types/node": "^25.6.0",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
   }
 }
