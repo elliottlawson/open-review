@@ -49,6 +49,8 @@ Rules for the output:
 
 - Emit **only** the JSON object. No preamble, no commentary, no markdown fences around it.
 - **Severity.** `critical` blocks merge (bugs, security holes, data loss). `warning` should be addressed but isn't a blocker. `info` is a note.
+- **Summary.** Never restate the verdict ("This PR is approved", "Changes requested") — the presentation layer renders it. The summary answers *why*.
+- **sectionSummaries.** Explain the underlying theme ("Missing input validation across the new endpoints"), never just count findings.
 - **Type.** `question` is something you need answered rather than a defect. `suggestion` is an optional improvement. Everything else is an `issue`.
 - **Category.** Every finding's `category` is the pass that found it — this is how the passes show up in CI output.
 - **Verify before you flag** still applies. Every finding needs a concrete file, line, and consequence. If you can't verify it, make it a `question`.

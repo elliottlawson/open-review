@@ -41,4 +41,12 @@ Then weigh the passes into a verdict:
 
 **Verify before you flag.** A finding must point at a concrete line and a concrete consequence. If you can't verify it, ask a question instead.
 
-Report your findings in prose — severity (critical / warning / info), the pass that found it, the file and line, and why it matters. If you're running under CI, the `review-as-json` skill wraps this review and shapes the output as JSON instead.
+## Reporting
+
+Report your findings in prose — severity (critical / warning / info), the pass that found it, the file and line, and why it matters.
+
+- **Judge the change, not the codebase.** Blocking findings only on new or meaningfully changed code; a pre-existing violation is advisory at most.
+- **Cite the standard, state the target pattern.** When the project has documented standards, name the doc a finding violates and the pattern to follow instead.
+- **Report repeated issues once.** The same issue across multiple files is one finding — note that it applies broadly.
+
+If you're running under CI, the `review-as-json` skill wraps this review and shapes the output as JSON instead.
