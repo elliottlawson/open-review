@@ -10,11 +10,12 @@ metadata:
 
 Two things:
 
-1. **Find the target.** What was this work supposed to achieve? Resolve it in
-   order: an objective the caller passed in → a brief from this session → the
-   PR body (prefer a `## Goal` section) → the linked issue or ticket. State it
-   in one line. If none of these yields a target, ask once; if there's still
-   nothing, say so and stop judging alignment.
+1. **Find the target.** What was this work supposed to achieve? Follow the
+   threads the change gives you, with whatever access you have — the caller's
+   objective, the session brief, the PR body (prefer a `## Goal` section), the
+   linked issue or ticket. Prefer the most direct statement of intent, and
+   state it in one line. If the threads lead nowhere, ask once; if there's
+   still nothing, say so and stop judging alignment.
 
 2. **Judge alignment.** Does the work in scope actually achieve that target,
    or does it do something else?
@@ -35,7 +36,7 @@ blocking; creep is advisory unless the extra behavior is material.
 - **Met** — the work achieves the target.
 - **Missing** — the work falls short; name what's missing.
 - **Different** — the work does something other than the target.
-- **Unclear** — no target found after asking once.
+- **Unclear** — no target found after asking once. The work might hit the target or miss it — don't grade against an assumed one.
 
 If the mission is unclear or the work misses it, that is the most important
 finding in the review. State it plainly before anything else.
