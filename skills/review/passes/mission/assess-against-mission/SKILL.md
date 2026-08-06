@@ -1,12 +1,12 @@
 ---
-name: assess-alignment
+name: assess-against-mission
 description: Judges whether the work in scope achieves the target.
 license: MIT
 metadata:
   version: "1"
 ---
 
-# Assess
+# Assess against mission
 
 Judge alignment. Does the work in scope actually achieve the target, or does it do something else?
 

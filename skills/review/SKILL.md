@@ -16,9 +16,7 @@ The change is the diff against the merge-base with the base branch (`git diff or
 
 ## Step 0 — Find the project's reference material
 
-Before judging anything, know where this project keeps its decisions and standards. Run `/infer-conventions`; read what it points to, and use those paths throughout the passes. If the project has no documented standards, say so in the verdict instead of inventing any.
-
-Passes load framework conventions packs on demand via `/load-conventions` — mostly implementation and craft.
+Run `/infer-conventions`; read what it points to, and use those paths throughout the passes. If the project has no documented standards, say so in the verdict instead of inventing any.
 
 Run: mission → architecture → implementation → craft → security → performance.
 

@@ -3,12 +3,14 @@ name: implementation
 description: Judges whether the code is written correctly for this project — framework usage, conventions, tests, and dependencies.
 license: MIT
 metadata:
-  version: "1"
+  version: "2"
 ---
 
 # Implementation
 
 The architecture pass judged the shape; this pass judges the code inside it. Is the work written correctly for this project, and is it proven?
+
+Load the conventions packs for the frameworks the change touches via `/load-conventions`.
 
 - **Framework usage.** Is this using the framework the way it's designed, or hand-rolled? Before flagging a hand-rolled implementation, check the framework's docs for a built-in that already does it, and cite the docs in the finding. If the framework doesn't ship one, don't invent the finding.
 - **Conventions.** Does the code follow this project's documented conventions? These are deliberate choices; deviations need justification.

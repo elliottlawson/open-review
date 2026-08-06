@@ -82,7 +82,7 @@ Stage and commit `REVIEW.md`. Follow the project's commit conventions.
 
 ## See also
 
-To make the agent run reviews automatically before PRs, run the `setup-review-loop` skill — it wires the loop into the project's agent instructions.
+To make the agent run reviews automatically before PRs, run `/setup-review-loop` — it wires the loop into the project's agent instructions.
 
 ## Re-running
 

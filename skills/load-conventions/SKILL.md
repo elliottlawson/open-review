@@ -8,10 +8,8 @@ metadata:
 
 # Load conventions
 
-Given the project's stack and what the change touches, load the matching conventions packs (e.g. `laravel`, `react`, `inertia`).
+For each framework in the project's stack: if the pack is installed locally, read it; otherwise resolve it at runtime (`npx skills use elliottlawson/open-review@<name>`, or fetch the pack's `SKILL.md` from GitHub). Pack names match framework names (e.g. `laravel`, `react`, `inertia`). The pack's index routes to sub-files by what the change touches — read only those.
 
-For each framework in the stack: if the pack is installed locally, read it; otherwise resolve it at runtime (`npx skills use elliottlawson/open-review@<name>`, or fetch the pack's `SKILL.md` from GitHub). A pack is that framework's standard — its index routes you to sub-files based on what the change touches; read only those.
-
-Load on demand. If nothing in scope touches a framework's domain — a workflow-only diff, a docs-only change — don't load its pack at all.
+Load only packs whose domain the change touches.
 
 Precedence: the project's documented conventions override packs; packs override general merits. Where the project documents a topic, the pack stays out of it.
