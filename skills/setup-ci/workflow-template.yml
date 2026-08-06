@@ -1,0 +1,53 @@
+name: Open Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Open Review
+        uses: elliottlawson/open-review-action@v1
+        with:
+          # Provider and model (optional - defaults to openrouter/moonshotai/kimi-k2.6)
+          # Options: anthropic, openai, openrouter
+          provider: openrouter
+          model: moonshotai/kimi-k2.6
+          api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}
+          
+          # Ephemeral focus for this review only (optional)
+          # prompt: "Focus on security vulnerabilities"
+          
+          # Section visibility (optional - all default to true)
+          # must_fix: true
+          # should_fix: true
+          # suggestions: true
+          # questions: true
+          
+          # Section collapse behavior (optional - default: auto)
+          # Options: auto, always, never
+          # collapse_must_fix: auto
+          # collapse_should_fix: auto
+          # collapse_suggestions: auto
+          # collapse_questions: auto
+          
+          # Custom verdict labels (optional)
+          # label_approve: "LGTM"
+          # label_changes_needed: "Changes Needed"
+          # label_hold: "Hold"
+          
+          # Timezone for timestamps (optional)
+          # timezone: America/New_York

@@ -1,81 +1,55 @@
-# Agent Guide: Open Review Core
+# Agent Guide: Open Review
 
-This project is the **platform-agnostic core engine** for AI-powered code reviews. It generates structured review results from local code, which downstream drivers (GitHub Action, future CLI commands, etc.) consume and format for their platform.
+Open Review is a **composable, skill-based code review system**. The product is the
+skill stack in `skills/` — agents (opencode, Claude Code, etc.) read and follow the
+skills directly. The old Mastra CLI engine (`src/`, `methodology/`, `presets/`) is
+**legacy**, pending retirement (tracked in open-review-lab).
 
-## Source of Truth Documents
+## Source of Truth
 
-The authoritative contracts live in committed TypeScript source files:
-
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| `src/core/types.ts` | **Source of truth** for the JSON output contract (`ReviewResult`, `ReviewFinding`, `OutputConfig`) |
-| `src/config/schema.ts` | **Source of truth** for `.open-review/config.yml` schema, defaults, and config precedence |
-| `src/core/agent.ts` | **Source of truth** for agent instructions and how they map to output sections |
-| `src/output/comment-template.ts` | PR comment template specification (GitHub-flavored markdown formatter) |
-| `methodology/core.md` | **Source of truth** for the review methodology (6-step reasoning process) |
+| `skills/review/SKILL.md` | **Source of truth** for the review process — Step 0 (reference material), pass order, verdict weighing, output discipline |
+| `skills/review/passes/<name>/SKILL.md` | The six passes: mission, architecture, implementation, craft, security, performance. Each answers one question and nothing else |
+| `skills/review-as-json/SKILL.md` | The JSON output contract CI consumes (`verdict`, `findings`, `sectionSummaries`, …) |
+| `skills/document-conventions/SKILL.md` | Writes a project's `REVIEW.md` — the natural-language table of contents mapping passes to project docs |
+| `skills/setup-ci/SKILL.md` + `workflow-template.yml` | Writes the GitHub Actions workflow |
+| `skills/conventions/<stack>/` | Framework convention packs (laravel, react, inertia). Dual-use standards: for writing *and* reviewing code. Rough drafts |
+| `docs/review-passes.md` | Local spec: the canonical definition of each pass (gitignored, not published) |
 
-> **Rule**: When changing behavior, document the intended contract before modifying committed source. Update specs, then diff against the source of truth files above and apply changes. This prevents drift between intent and implementation.
+## The Model
 
-## Key Files
+- **Install one skill:** `npx skills add elliottlawson/open-review --skill review`.
+- **Everything else resolves at runtime** via `npx skills use elliottlawson/open-review@<name>`
+  or raw fetch — `document-conventions`, `setup-ci`, `review-as-json`, and the
+  conventions packs are never installed by end users. (CI installs `review` +
+  `review-as-json` per run, which *is* runtime resolution.)
+- **Conventions layer (precedence):** project conventions (`REVIEW.md` →
+  auto-discovered `AGENTS.md`/docs) **override** framework packs
+  (`skills/conventions/<stack>/`) **override** the passes' general merits.
+- **Packs are collections:** an index `SKILL.md` routes to sub-files by what the
+  change touches. Addressed by leaf name (`@laravel`), regardless of nesting.
+- **No publishing step:** `npx skills` resolves straight from GitHub. skills.sh
+  listing is optional discoverability (lab #11).
 
-| File | Purpose |
-|---|---|
-| `src/core/agent.ts` | Mastra-based review agent, prompt construction, structured output |
-| `src/core/types.ts` | Shared TypeScript types (`ReviewResult`, `ReviewFinding`, config types) |
-| `src/config/schema.ts` | Zod schema for `.open-review/config.yml` validation |
-| `src/config/loader.ts` | Config file discovery and loading |
-| `src/core/methodology-loader.ts` | Loads methodology from built-in or local files |
-| `src/core/preset-loader.ts` | Loads framework presets |
-| `src/core/framework-detector.ts` | Auto-detects frameworks from project files |
-| `src/cli/review.ts` | Local review command (`open-review review`) |
-| `src/cli/publish.ts` | Publish command (copies methodology for customization) |
-| `src/output/human.ts` | Terminal formatter (ANSI colors) |
-| `src/output/agent.ts` | JSON formatter (`--json` flag output) |
-| `src/output/comment-template.ts` | GitHub markdown formatter |
+## Downstream
 
-## Design Principles
+- **open-review-action** — the CI engine. Installs opencode + the skills per run,
+  executes `review-as-json` against the PR diff, formats and posts the comment.
+  Workflow files reference `elliottlawson/open-review-action@v1`.
 
-- **Local-first**: Core never calls external APIs. Reads files from local filesystem only.
-- **Platform-agnostic**: No GitHub, GitLab, or platform-specific logic in core.
-- **Structured output**: AI produces `ReviewResult` JSON. Formatters transform it for display.
-- **Config-driven**: Behavior controlled by `.open-review/config.yml` and CLI flags.
-- **Methodology-first**: The reasoning process is the product, not the tool.
+## Legacy (do not extend)
 
-## Environment
+`src/core/agent.ts`, `methodology/`, `presets/`, `src/config/` — the Mastra CLI
+engine. Kept working until retired; all new behavior lands in the skills.
+`npm run build` / `npx tsx src/cli/index.ts review --diff main --json` still work
+against the old engine.
 
-- `OPEN_REVIEW_API_KEY` — API key for the configured LLM provider
+## Backlog
 
-## Development
-
-```bash
-npm install
-npm run build
-# Test locally:
-npx tsx src/cli/index.ts review --diff main --json
-```
-
-## Architecture
-
-```
-Core (open-review)
-├─ Reads code from local filesystem
-├─ Loads config from .open-review/config.yml
-├─ Loads methodology from methodology/ (built-in or local)
-├─ Loads presets from presets/ (built-in or local)
-├─ Builds prompt: methodology + presets + conventions + output discipline
-├─ Calls LLM (Mastra agent with structured output)
-└─ Returns: ReviewResult JSON
-
-Driver (open-review-action)
-├─ Runs: open-review review --json
-├─ Receives: ReviewResult
-├─ Formats: GitHub markdown (via TEMPLATE_SPEC.md)
-└─ Posts: via GitHub API
-```
-
-## Planning Directory
-
-This project uses a `plans/` directory (ignored by git) to track pending and completed work:
+Cross-session backlog and the future eval harness live in the private
+**open-review-lab** repo (issues). The gitignored `plans/` directory is for
+session-local specs:
 
 ```
 plans/
@@ -83,18 +57,12 @@ plans/
 └── complete/    # Work that has been finished
 ```
 
-- **Starting work**: Check `plans/pending/` for the next spec to implement
-- **Finishing work**: Move the completed plan from `plans/pending/` to `plans/complete/`
-
-This is a lightweight coordination system for tracking what has been specced vs what has been built.
-
 ## Change Workflow
 
-When changing core behavior:
-
-1. Document the intended contract (update local specs before modifying committed source)
-2. Update `src/core/types.ts` if the data model changes
-3. Update `src/core/agent.ts` if the prompt or output structure changes
-4. Update `src/config/schema.ts` if configuration changes
-5. Run a local review to verify: `npx tsx src/cli/index.ts review --diff main --json`
-6. Update downstream specs if the output contract changes
+1. Document the intended contract (a spec in `plans/pending/` or a lab issue)
+   before modifying committed source
+2. Edit the skills — the SKILL.md files are the product
+3. Verify structure: `npx skills add . --list` discovers the expected set
+4. If the JSON contract or skill names change, downstream (the action) must change
+   in lockstep — check open-review-lab for the tracking issue
+5. Move the completed spec from `plans/pending/` to `plans/complete/`
