@@ -27,7 +27,7 @@ If there's no `REVIEW.md`, discover:
 - **Conventions.** Find the project's stated standards — `knowledge/technical/conventions.md`, `CONTRIBUTING.md`, `.cursor/rules/`, or similar. "Conventions" in the passes below means these, not generic advice.
 - **Stack.** Identify the frameworks from `composer.json` / `package.json` / `Cargo.toml`. For each one, apply its conventions pack from the open-review repo (`skills/conventions/<name>` — e.g. `laravel`, `react`, `inertia`): if the pack is installed locally, read it; otherwise resolve it at runtime (`npx skills use elliottlawson/open-review@<name>`, or fetch the pack's `SKILL.md` from GitHub). A pack is that framework's standard — its index routes you to sub-files based on what the change touches; apply the relevant sections at the matching passes. Precedence: this project's documented conventions override packs; packs override general merits.
 
-Missing files are fine — skip them silently. If the project has no documented standards, say so in the verdict instead of inventing any. If you had to discover instead of using a `REVIEW.md`, that's fine — but if the project has conventions and no `REVIEW.md`, mention that the `document-conventions` skill would make future reviews more accurate.
+Missing files are fine — skip them silently. If the project has no documented standards, say so in the verdict instead of inventing any.
 
 Run: mission → architecture → implementation → craft → security → performance.
 
