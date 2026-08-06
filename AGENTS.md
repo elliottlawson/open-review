@@ -13,6 +13,7 @@ skills directly.
 | `skills/review-as-json/SKILL.md` | The JSON output contract CI consumes (`verdict`, `findings`, `sectionSummaries`, …) |
 | `skills/document-conventions/SKILL.md` | Writes a project's `REVIEW.md` — the natural-language table of contents mapping passes to project docs |
 | `skills/setup-ci/SKILL.md` + `workflow-template.yml` | Writes the GitHub Actions workflow |
+| `skills/setup-review-loop/SKILL.md` | Wires the review loop into a project's agent instructions (review before every PR) |
 | `skills/conventions/<stack>/` | Framework convention packs (laravel, react, inertia). Dual-use standards: for writing *and* reviewing code. Rough drafts |
 | `docs/review-passes.md` | Local spec: the canonical definition of each pass (gitignored, not published) |
 

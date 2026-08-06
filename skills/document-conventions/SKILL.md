@@ -86,15 +86,9 @@ Architecture generally lives in `<folder>`. The key docs are:
 
 Stage and commit `REVIEW.md`. Follow the project's commit conventions.
 
-## Step 5 — Optionally wire automation
+## See also
 
-Ask the user whether they want reviews to run automatically at commit time. If yes:
-
-- Detect which agents are configured in this repo (`.claude/`, `.cursor/`, `.agents/`, opencode config, etc.).
-- Add a short instruction to the matching `AGENTS.md`/`CLAUDE.md`/config: "Run the review skill on each change before committing; iterate until it passes."
-- Fit it into the file's existing structure — never clobber what's already there.
-
-If they decline, stop.
+To make the agent run reviews automatically before PRs, run the `setup-review-loop` skill — it wires the loop into the project's agent instructions.
 
 ## Re-running
 
