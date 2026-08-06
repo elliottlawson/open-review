@@ -53,7 +53,9 @@ plans/
 
 1. Document the intended contract (a spec in `plans/pending/` or a lab issue)
    before modifying committed source
-2. Edit the skills — the SKILL.md files are the product
+2. Edit the skills — the SKILL.md files are the product. Any command a skill
+   asks an agent to run must be non-interactive (`-y`, explicit flags) — an
+   interactive prompt hangs the run
 3. Verify structure: `npx skills add . --list` discovers the expected set
 4. If the JSON contract or skill names change, downstream (the action) must change
    in lockstep

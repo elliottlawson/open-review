@@ -12,10 +12,10 @@ Make the project's agent run the `review` skill as part of its normal process �
 
 ## Step 1 — Make sure review is installed
 
-The loop calls the `review` skill. Check for it (`.agents/skills/review/`, or the project/agent skills directory). If it's missing, install it:
+The loop calls the `review` skill. Check for it (`.agents/skills/review/`, or the project/agent skills directory). If it's missing, install it (non-interactively, so nothing blocks on a prompt):
 
 ```bash
-npx skills add elliottlawson/open-review --skill review
+npx skills add elliottlawson/open-review --skill review -y
 ```
 
 If an agent session is already running, note that skills register at session start — a fresh session is needed to see it.
