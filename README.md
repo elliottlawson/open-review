@@ -50,10 +50,3 @@ the review on every pull request and posts the result as a comment:
 ```
 
 The `setup-ci` skill generates this for you, configured from a few questions.
-
-## Legacy
-
-Versions ≤ 0.1.x (the npm package, and the action's `@v1` tag) were the old
-Mastra CLI engine: frozen and unmaintained. Source material lives on in
-[open-review-lab](https://github.com/elliottlawson/open-review-lab) (private);
-everything else is git history.

@@ -2,8 +2,7 @@
 
 Open Review is a **composable, skill-based code review system**. The product is the
 skill stack in `skills/` — agents (opencode, Claude Code, etc.) read and follow the
-skills directly. The old Mastra CLI engine (`src/`, `methodology/`, `presets/`) is
-**legacy**, pending retirement (tracked in open-review-lab).
+skills directly.
 
 ## Source of Truth
 
@@ -40,9 +39,8 @@ skills directly. The old Mastra CLI engine (`src/`, `methodology/`, `presets/`) 
 
 ## Backlog
 
-Cross-session backlog and the future eval harness live in the private
-**open-review-lab** repo (issues). The gitignored `plans/` directory is for
-session-local specs:
+The cross-session backlog and eval harness live outside this repo (private).
+The gitignored `plans/` directory is for session-local specs:
 
 ```
 plans/
@@ -57,5 +55,5 @@ plans/
 2. Edit the skills — the SKILL.md files are the product
 3. Verify structure: `npx skills add . --list` discovers the expected set
 4. If the JSON contract or skill names change, downstream (the action) must change
-   in lockstep — check open-review-lab for the tracking issue
+   in lockstep
 5. Move the completed spec from `plans/pending/` to `plans/complete/`
