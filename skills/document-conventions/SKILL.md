@@ -3,7 +3,7 @@ name: document-conventions
 description: Documents a project's conventions — discovers where your standards live, confirms them with you, and writes a committed REVIEW.md table of contents so future reviews judge against your real standards. Optional; run once per project, re-run to amend.
 license: MIT
 metadata:
-  version: "1"
+  version: "2"
 ---
 
 # Review setup
@@ -16,13 +16,7 @@ The review skill works out of the box by auto-discovering your standards. This m
 
 ## Step 1 — Discover
 
-Look for this project's standards and record what you find:
-
-- **Agent instructions**: `AGENTS.md`, `CLAUDE.md`
-- **Docs index**: `knowledge/table-of-contents.md`, `docs/README.md`
-- **Conventions**: `knowledge/technical/conventions.md`, `CONTRIBUTING.md`, `.cursor/rules/`, similar
-- **Architecture**: any architecture or design docs
-- **Stack**: `composer.json`, `package.json`, `Cargo.toml`, etc.
+Run the `infer-conventions` skill and record what it finds — agent instructions, docs indexes, conventions, architecture docs, and the stack.
 
 ## Step 2 — Confirm with the user
 
