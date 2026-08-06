@@ -10,6 +10,10 @@ metadata:
 
 Review the change by running the passes in `passes/`, in order. Each pass is a skill in this directory — read it and apply it.
 
+## Scope
+
+The change is the diff against the merge-base with the base branch (`git diff origin/main...HEAD`, or the base/range the caller gives). Confirm the ref resolves; if the diff is empty, say so and stop. Skip generated and vendored files.
+
 ## Step 0 — Find the project's reference material
 
 Before judging anything, know where this project keeps its decisions and standards.
