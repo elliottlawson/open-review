@@ -71,6 +71,8 @@ move it down the chain.
   already shaped them.
 - Put cross-field or custom-rule logic in `withValidator()` only when
   `rules()` genuinely cannot express it.
+- Custom validation messages and attributes belong on the request —
+  `messages()` / `attributes()` — not scattered at the call site.
 - `authorize()` belongs in the request when it has no model to check
   against; prefer the policy when the check is against a model (see
   below).
@@ -95,6 +97,9 @@ move it down the chain.
 - The controller calls the action; the action does the work; the action
   may not touch the request or response. Pass primitives and models in,
   get a result (a model, a bool, a value) back.
+- An action is a testable unit: it runs without HTTP, so its behavior is
+  provable by calling it directly with its inputs, not by poking it
+  through a route.
 - Do not extract actions for the sake of file count — extract when the
   logic is more than "find, assign, save," when it's reused, or when
   keeping it in the controller would make the controller do two jobs.
