@@ -8,13 +8,13 @@ metadata:
 
 # Document conventions
 
-Turn the `/infer-conventions` map into this project's `REVIEW.md`, and commit it. Run once per project, re-run to amend.
+Turn what `/infer-conventions` finds into this project's `REVIEW.md`, and commit it. Run once per project, re-run to amend.
 
 **Find:** where the project keeps its standards and what its stack is — via `/infer-conventions`, confirmed with the user.
 
 **Produce:** `REVIEW.md` at the repo root — a natural-language table of contents mapping each review pass to the docs that define "correct" for it. It has succeeded when a review can judge against the project's real standards by following it, without re-discovering anything.
 
-## Step 1 — Map and confirm
+## Step 1 — Discover and confirm
 
 Use `/infer-conventions`, then check what it found with the user — "these are your conventions docs, correct? Anything missed, anything wrong?" It's a conversation, not a form. Adjust the map from their answers before writing anything.
 

@@ -16,7 +16,7 @@ The change is the diff against the merge-base with the base branch (`git diff or
 
 ## Step 0 — Find the project's reference material
 
-Map the project's standards and stack with `/infer-conventions`; use those paths throughout the passes. If the project has no documented standards, say so in the verdict instead of inventing any.
+Find the project's standards and stack with `/infer-conventions`; use what it loads throughout the passes. If the project has no documented standards, say so in the verdict instead of inventing any.
 
 ## Passes
 
