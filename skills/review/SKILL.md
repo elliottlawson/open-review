@@ -8,6 +8,8 @@ metadata:
 
 # Review
 
+Resolve any `/skill` not installed locally at runtime: `npx skills use elliottlawson/open-review@<name>` (or fetch its `SKILL.md` from GitHub). Sub-files ride along.
+
 ## Scope
 
 The change is the diff against the merge-base with the base branch (`git diff origin/main...HEAD`, or the base/range the caller gives). Confirm the ref resolves; if the diff is empty, say so and stop. Skip generated and vendored files.

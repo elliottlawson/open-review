@@ -45,7 +45,9 @@ Skills are instructions, not documentation about instructions. House rules:
    something *is* instead of what to *do*, cut it.
 3. **Skills are verbs.** "Use `/load-conventions` for the frameworks the
    change touches" — never "Run `/load-conventions`; read what it points
-   to." The description is the trigger; the body is the work.
+   to." The description is the trigger; the body is the work. State the
+   runtime-resolution mechanics once, in `review`; everywhere else,
+   reference by bare slash.
 4. **One line per instruction.** If a sentence needs an em-dash caveat to
    stand, it's probably two instructions or none.
 5. **Name the target, trust the intelligence.** "Find the project's docs
