@@ -44,7 +44,8 @@ Skills are instructions, not documentation about instructions. House rules:
 1. **Body starts with the do.** No heading restating the name, no "this
    skill is…", no orientation paragraph. First sentence is an instruction.
 2. **Every sentence is an imperative or a rule.** If it explains what
-   something *is* instead of what to *do*, cut it.
+   something *is* instead of what to *do*, fold it into the instruction
+   ("load the conventions from `skills/conventions/`") or cut it.
 3. **Skills are verbs.** "Use `/load-conventions` for the frameworks the
    change touches" — never "Run `/load-conventions`; read what it points
    to." The description is the trigger; the body is the work. State the
@@ -59,8 +60,9 @@ Skills are instructions, not documentation about instructions. House rules:
    not "the pack"; say what happens, not "rides along" or "stays out of
    it."
 7. **State the IO.** What the skill takes in, what it produces, and what
-   done looks like. "Turn what `/infer-conventions` finds into `REVIEW.md`
-   — done when a review can judge from it without re-discovering anything."
+   done looks like — however small the skill. "Turn what
+   `/infer-conventions` finds into `REVIEW.md` — done when a review can
+   judge from it without re-discovering anything."
 8. **Process skills are short.** Reference earns length only as rules.
 
 ## Downstream
@@ -88,6 +90,9 @@ plans/
    asks an agent to run must be non-interactive (`-y`, explicit flags) — an
    interactive prompt hangs the run
 3. Verify structure: `npx skills add . --list` discovers the expected set
-4. If the JSON contract or skill names change, downstream (the action) must change
+4. Open the PR — the repo's own CI reviews it with the product, applying
+   the Skill Style rules to skill files. Address its findings or
+   consciously accept them
+5. If the JSON contract or skill names change, downstream (the action) must change
    in lockstep
-5. Move the completed spec from `plans/pending/` to `plans/complete/`
+6. Move the completed spec from `plans/pending/` to `plans/complete/`
