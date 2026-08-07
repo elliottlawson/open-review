@@ -33,6 +33,7 @@ Read the pattern for whatever the change touches:
 | The change involves... | Read |
 |---|---|
 | Routes, controllers, form requests, policies, actions — how a request flows | `patterns/routing.md` |
+| Models, queries, scopes, migrations, eager loading / N+1 | `patterns/routing.md` → **Models** |
 
 ## What are you judging? (checks)
 
