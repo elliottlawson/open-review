@@ -8,7 +8,7 @@ metadata:
 
 # Review
 
-Resolve any `/skill` not installed locally at runtime: `npx skills use elliottlawson/open-review@<name>` (or fetch its `SKILL.md` from GitHub). Sub-files ride along.
+If a referenced skill isn't available locally, fetch it from the open-review repo at runtime: `npx skills use elliottlawson/open-review@<name>` if npx is available, otherwise fetch the skill's directory from GitHub. The whole directory comes with it, subdirectories included.
 
 ## Scope
 
