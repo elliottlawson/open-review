@@ -22,10 +22,10 @@ jobs:
       - name: Open Review
         uses: elliottlawson/open-review-action@v2
         with:
-          # Provider and model (optional - defaults to openrouter/moonshotai/kimi-k2.6)
+          # Provider and model (optional - defaults to openrouter/deepseek/deepseek-v4-flash-0731)
           # Options: anthropic, openai, openrouter
           provider: openrouter
-          model: moonshotai/kimi-k2.6
+          model: deepseek/deepseek-v4-flash-0731
           api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}
           
           # Ephemeral focus for this review only (optional)
