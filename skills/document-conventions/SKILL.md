@@ -8,15 +8,19 @@ metadata:
 
 # Document conventions
 
-Write this project's `REVIEW.md` — a natural-language table of contents mapping each review pass to the docs that define "correct" for this project. It commits to the repo root and survives skill updates; `/review` reads it first. Run once per project, re-run to amend.
+Turn the `/infer-conventions` map into this project's `REVIEW.md`, and commit it. Run once per project, re-run to amend.
 
-## Step 1 — Discover and confirm
+**Find:** where the project keeps its standards and what its stack is — via `/infer-conventions`, confirmed with the user.
 
-Run `/infer-conventions`, then check what it found with the user — "these are your conventions docs, correct? Anything missed, anything wrong?" It's a conversation, not a form. Adjust the map from their answers before writing anything.
+**Produce:** `REVIEW.md` at the repo root — a natural-language table of contents mapping each review pass to the docs that define "correct" for it. It has succeeded when a review can judge against the project's real standards by following it, without re-discovering anything.
+
+## Step 1 — Map and confirm
+
+Use `/infer-conventions`, then check what it found with the user — "these are your conventions docs, correct? Anything missed, anything wrong?" It's a conversation, not a form. Adjust the map from their answers before writing anything.
 
 ## Step 2 — Write REVIEW.md
 
-Write `REVIEW.md` at the repo root (create it if missing; merge into it if it exists). It's a **table of contents in natural language** — write it the way you'd guide a human teammate to the right docs.
+Write `REVIEW.md` at the repo root (create it if missing; merge into it if it exists). Write it the way you'd guide a human teammate to the right docs.
 
 Structure it as a `## <pass>` section per pass (mission, architecture, implementation, craft, security, performance), with the docs for that pass beneath it. Notes on writing it well:
 
@@ -66,11 +70,3 @@ Architecture generally lives in `<folder>`. The key docs are:
 ## Step 3 — Commit
 
 Stage and commit `REVIEW.md`. Follow the project's commit conventions.
-
-## See also
-
-To make the agent run reviews automatically before PRs, run `/setup-review-loop` — it wires the loop into the project's agent instructions.
-
-## Re-running
-
-Re-running this skill loads the existing `REVIEW.md` and amends it. Safe to run any time.
