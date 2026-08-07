@@ -14,20 +14,11 @@ Configure the review skill for this repository. Run once when you first install 
 
 The review skill works out of the box by auto-discovering your standards. This makes it explicit: you tell it exactly where things live, so it doesn't hunt every time. The result is a `REVIEW.md` committed to the repo root — your file, not the skill's — so it survives skill updates. The review skill reads it first, and only falls back to auto-discovery when it's absent.
 
-## Step 1 — Discover
+## Step 1 — Discover and confirm
 
-Run `/infer-conventions` and record what it finds.
+Run `/infer-conventions`, then check what it found with the user — "these are your conventions docs, correct? Anything missed, anything wrong?" It's a conversation, not a form. Adjust the map from their answers before writing anything.
 
-## Step 2 — Confirm with the user
-
-Show your findings and check them — this is a conversation, not a form:
-
-- "These are your conventions docs — correct?"
-- "Any standards I missed? Any of these wrong?"
-
-Adjust the list based on the answers before writing anything.
-
-## Step 3 — Write REVIEW.md
+## Step 2 — Write REVIEW.md
 
 Write `REVIEW.md` at the repo root (create it if missing; merge into it if it exists). It's a **table of contents in natural language** — write it the way you'd guide a human teammate to the right docs.
 
@@ -76,7 +67,7 @@ Architecture generally lives in `<folder>`. The key docs are:
 - <anything worth saying that doesn't fit above>
 ```
 
-## Step 4 — Commit
+## Step 3 — Commit
 
 Stage and commit `REVIEW.md`. Follow the project's commit conventions.
 
