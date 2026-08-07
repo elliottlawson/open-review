@@ -8,7 +8,7 @@ metadata:
 
 # Set up review CI
 
-Write `.github/workflows/open-review.yml` from the bundled template (`workflow-template.yml` in this skill's directory), configured from the user's answers below. Done when the file is committed and the user knows which secret to add — every PR then gets a review posted as a comment.
+Write `.github/workflows/open-review.yml` from the bundled template (`workflow-template.yml` in this skill's directory), configured from the user's answers below. Done when the file is committed and the user knows which secret to add.
 
 ## Step 1 — Check what's here
 
@@ -45,7 +45,7 @@ Offer to set it via `gh secret set <NAME>` if they have the key handy.
 
 ## Step 5 — Commit
 
-Stage and commit the workflow file. Follow the project's commit conventions. The next PR will get a review automatically.
+Stage and commit the workflow file. Follow the project's commit conventions.
 
 ## Re-running
 

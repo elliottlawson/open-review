@@ -8,7 +8,7 @@ metadata:
 
 # Review as JSON
 
-Run `/review` on this change — follow it exactly: Step 0, all six passes in order, then the verdict.
+Run `/review` on this change and follow it exactly.
 
 Emit the result as a single JSON object instead of a prose report:
 

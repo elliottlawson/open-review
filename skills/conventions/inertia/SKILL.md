@@ -1,6 +1,6 @@
 ---
 name: inertia
-description: The Inertia standard — conventions for writing and reviewing Inertia.js code, the bridge between Laravel backends and React/Vue frontends.
+description: The Inertia standard — conventions for writing and reviewing Inertia.js code, the bridge between Laravel backends and frontend apps.
 license: MIT
 metadata:
   version: "0"
@@ -9,7 +9,7 @@ metadata:
 
 # Inertia
 
-Apply these conventions alongside the `laravel` and `react` conventions.
+Apply these conventions alongside the `laravel` conventions.
 
 ## Server side
 

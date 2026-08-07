@@ -8,7 +8,7 @@ metadata:
 
 # Review
 
-Review the change against the six passes, then weigh them into a verdict.
+Review the change against the passes, then weigh them into a verdict.
 
 If a referenced skill isn't available locally, fetch it from the open-review repo at runtime — the whole directory, subdirectories included. Use `npx skills use elliottlawson/open-review@<name>` if npx is available; otherwise fetch the directory from GitHub.
 

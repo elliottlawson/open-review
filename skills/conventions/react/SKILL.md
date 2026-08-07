@@ -9,7 +9,7 @@ metadata:
 
 # React
 
-Apply these conventions whether you're writing or reviewing React code. Read
+Apply these conventions when you're writing or reviewing React code. Read
 the sub-file for whatever the change touches:
 
 | The change involves... | Read |
