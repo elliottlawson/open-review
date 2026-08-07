@@ -1,6 +1,6 @@
 ---
 name: load-conventions
-description: Loads the conventions packs for a project's stack — the framework standards to write or review against, on demand.
+description: Loads the conventions for a project's frameworks — the standards to write or review against, on demand.
 license: MIT
 metadata:
   version: "1"
@@ -8,6 +8,6 @@ metadata:
 
 # Load conventions
 
-Use the conventions pack for each framework in the project's stack — packs are named for their framework (`/laravel`, `/react`, `/inertia`). Each pack's index routes to sub-files by what the change touches — read only those. Load only packs whose domain the change touches.
+The open-review repo keeps coding conventions per framework, grouped by framework in `skills/conventions/` — `/laravel`, `/react`, `/inertia`. Load the ones for the frameworks you're working on; if the change doesn't touch a framework, skip it. Each one starts with an index that points at detailed files by topic — read only the topics the change touches.
 
-Precedence: the project's documented conventions override packs; packs override general merits. Where the project documents a topic, the pack stays out of it.
+If the project documents its own conventions for a topic, follow those. Where it doesn't, these are the standard.

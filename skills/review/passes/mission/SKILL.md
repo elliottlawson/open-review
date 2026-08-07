@@ -1,6 +1,6 @@
 ---
 name: mission
-description: Finds the target outcome of the work, then judges whether the work in scope achieves it.
+description: Finds what the work was supposed to achieve, then judges whether it achieves it.
 license: MIT
 metadata:
   version: "2"
@@ -8,6 +8,6 @@ metadata:
 
 # Mission
 
-Find the target outcome of the work with `/uncover-mission`, then judge whether the work achieves it with `/assess-against-mission`.
+Find what the work was supposed to achieve with `/uncover-mission`, then judge whether it achieves it with `/assess-against-mission`.
 
 A missed or unclear mission is the most important finding in the review. State it first.

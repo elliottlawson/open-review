@@ -1,6 +1,6 @@
 ---
 name: uncover-mission
-description: Finds the target outcome of the work.
+description: Finds what the work was supposed to achieve.
 license: MIT
 metadata:
   version: "1"

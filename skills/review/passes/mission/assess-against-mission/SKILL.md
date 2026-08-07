@@ -1,6 +1,6 @@
 ---
 name: assess-against-mission
-description: Judges whether the work in scope achieves the target.
+description: Judges whether the work achieves the target.
 license: MIT
 metadata:
   version: "1"
@@ -8,7 +8,7 @@ metadata:
 
 # Assess against mission
 
-Judge alignment. Does the work in scope actually achieve the target, or does it do something else?
+Judge whether the work achieves the target, or does something else.
 
 ## Findings
 

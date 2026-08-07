@@ -16,7 +16,7 @@ skills directly.
 | `skills/document-conventions/SKILL.md` | Writes a project's `REVIEW.md` — the natural-language table of contents mapping passes to project docs |
 | `skills/setup-ci/SKILL.md` + `workflow-template.yml` | Writes the GitHub Actions workflow |
 | `skills/setup-review-loop/SKILL.md` | Wires the review loop into a project's agent instructions (review before every PR) |
-| `skills/conventions/<stack>/` | Framework convention packs (laravel, react, inertia). Dual-use standards: for writing *and* reviewing code. Rough drafts |
+| `skills/conventions/<stack>/` | Framework conventions (laravel, react, inertia), grouped by framework. Dual-use standards: for writing *and* reviewing code. Rough drafts |
 | `docs/review-passes.md` | Local spec: the canonical definition of each pass (gitignored, not published) |
 
 ## The Model
@@ -24,14 +24,16 @@ skills directly.
 - **Install one skill:** `npx skills add elliottlawson/open-review --skill review`.
 - **Everything else resolves at runtime** via `npx skills use elliottlawson/open-review@<name>`
   or raw fetch — `document-conventions`, `setup-ci`, `review-as-json`,
-  `infer-conventions`, `load-conventions`, and the conventions packs are
-  never installed by end users. (CI installs `review` + `review-as-json`
+  `infer-conventions`, `load-conventions`, and the framework conventions
+  are never installed by end users. (CI installs `review` + `review-as-json`
   per run, which *is* runtime resolution.)
-- **Conventions layer (precedence):** project conventions (`REVIEW.md` →
-  auto-discovered `AGENTS.md`/docs) **override** framework packs
-  (`skills/conventions/<stack>/`) **override** the passes' general merits.
-- **Packs are collections:** an index `SKILL.md` routes to sub-files by what the
-  change touches. Addressed by leaf name (`@laravel`), regardless of nesting.
+- **Conventions precedence:** the project's own conventions (`REVIEW.md` →
+  auto-discovered `AGENTS.md`/docs) win over the framework conventions in
+  `skills/conventions/<stack>/`; where neither covers a topic, the passes
+  judge on general merits.
+- **Framework conventions are collections:** an index `SKILL.md` routes to
+  sub-files by what the change touches. Addressed by leaf name (`@laravel`),
+  regardless of nesting.
 - **No publishing step:** `npx skills` resolves straight from GitHub. skills.sh
   listing is optional discoverability (lab #11).
 
@@ -52,10 +54,14 @@ Skills are instructions, not documentation about instructions. House rules:
    stand, it's probably two instructions or none.
 5. **Name the target, trust the intelligence.** "Find the project's docs
    and standards," not a checklist of exact filenames.
-6. **State the IO.** What the skill takes in, what it produces, and what
-   done looks like. "Turn the `/infer-conventions` map into `REVIEW.md` —
-   done when a review can judge from it without re-discovering anything."
-7. **Process skills are short.** Reference earns length only as rules.
+6. **Plain English only.** The agent reads the skill cold, without your
+   session context. No coined terms — say "the framework's conventions,"
+   not "the pack"; say what happens, not "rides along" or "stays out of
+   it."
+7. **State the IO.** What the skill takes in, what it produces, and what
+   done looks like. "Turn what `/infer-conventions` finds into `REVIEW.md`
+   — done when a review can judge from it without re-discovering anything."
+8. **Process skills are short.** Reference earns length only as rules.
 
 ## Downstream
 

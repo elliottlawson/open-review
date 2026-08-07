@@ -16,7 +16,7 @@ Turn what `/infer-conventions` finds into this project's `REVIEW.md`, and commit
 
 ## Step 1 — Discover and confirm
 
-Use `/infer-conventions`, then check what it found with the user — "these are your conventions docs, correct? Anything missed, anything wrong?" It's a conversation, not a form. Adjust the map from their answers before writing anything.
+Use `/infer-conventions`, then check what it found with the user — "these are your conventions docs, correct? Anything missed, anything wrong?" It's a conversation, not a form. Correct it from their answers before writing anything.
 
 ## Step 2 — Write REVIEW.md
 
