@@ -24,4 +24,5 @@ jobs:
         with:
           provider: openrouter
           model: deepseek/deepseek-v4-flash-0731
+          skills_ref: ${{ github.head_ref }}
           api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}
