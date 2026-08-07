@@ -10,27 +10,60 @@ skills directly.
 |---|---|
 | `skills/review/SKILL.md` | **Source of truth** for the review process — Step 0 (reference material), pass order, verdict weighing, output discipline |
 | `skills/review/passes/<name>/SKILL.md` | The six passes: mission, architecture, implementation, craft, security, performance. Each answers one question and nothing else |
+| `skills/infer-conventions/SKILL.md` | Maps where a project keeps its standards and what its stack is — review's Step 0 and document-conventions' discovery |
+| `skills/load-conventions/SKILL.md` | Loads the stack's conventions packs on demand — called from passes, and usable when writing code |
 | `skills/review-as-json/SKILL.md` | The JSON output contract CI consumes (`verdict`, `findings`, `sectionSummaries`, …) |
 | `skills/document-conventions/SKILL.md` | Writes a project's `REVIEW.md` — the natural-language table of contents mapping passes to project docs |
 | `skills/setup-ci/SKILL.md` + `workflow-template.yml` | Writes the GitHub Actions workflow |
 | `skills/setup-review-loop/SKILL.md` | Wires the review loop into a project's agent instructions (review before every PR) |
-| `skills/conventions/<stack>/` | Framework convention packs (laravel, react, inertia). Dual-use standards: for writing *and* reviewing code. Rough drafts |
+| `skills/conventions/<stack>/` | Framework conventions (laravel, react, inertia), grouped by framework. Dual-use standards: for writing *and* reviewing code. Rough drafts |
 | `docs/review-passes.md` | Local spec: the canonical definition of each pass (gitignored, not published) |
 
 ## The Model
 
 - **Install one skill:** `npx skills add elliottlawson/open-review --skill review`.
 - **Everything else resolves at runtime** via `npx skills use elliottlawson/open-review@<name>`
-  or raw fetch — `document-conventions`, `setup-ci`, `review-as-json`, and the
-  conventions packs are never installed by end users. (CI installs `review` +
-  `review-as-json` per run, which *is* runtime resolution.)
-- **Conventions layer (precedence):** project conventions (`REVIEW.md` →
-  auto-discovered `AGENTS.md`/docs) **override** framework packs
-  (`skills/conventions/<stack>/`) **override** the passes' general merits.
-- **Packs are collections:** an index `SKILL.md` routes to sub-files by what the
-  change touches. Addressed by leaf name (`@laravel`), regardless of nesting.
+  or raw fetch — `document-conventions`, `setup-ci`, `review-as-json`,
+  `infer-conventions`, `load-conventions`, and the framework conventions
+  are never installed by end users. (CI installs `review` + `review-as-json`
+  per run, which *is* runtime resolution.)
+- **Conventions precedence:** the project's own conventions (`REVIEW.md` →
+  auto-discovered `AGENTS.md`/docs) win over the framework conventions in
+  `skills/conventions/<stack>/`; where neither covers a topic, the passes
+  judge on general merits.
+- **Framework conventions are collections:** an index `SKILL.md` routes to
+  sub-files by what the change touches. Addressed by leaf name (`@laravel`),
+  regardless of nesting.
 - **No publishing step:** `npx skills` resolves straight from GitHub. skills.sh
   listing is optional discoverability (lab #11).
+
+## Skill Style
+
+Skills are instructions, not documentation about instructions. House rules:
+
+1. **Body starts with the do.** No heading restating the name, no "this
+   skill is…", no orientation paragraph. First sentence is an instruction.
+2. **Every sentence is an imperative or a rule.** If it explains what
+   something *is* instead of what to *do*, fold it into the instruction
+   ("load the conventions from `skills/conventions/`") or cut it.
+3. **Skills are verbs.** "Use `/load-conventions` for the frameworks the
+   change touches" — never "Run `/load-conventions`; read what it points
+   to." The description is the trigger; the body is the work. State the
+   runtime-resolution mechanics once, in `review`; everywhere else,
+   reference by bare slash.
+4. **One line per instruction.** If a sentence needs an em-dash caveat to
+   stand, it's probably two instructions or none.
+5. **Name the target, trust the intelligence.** "Find the project's docs
+   and standards," not a checklist of exact filenames.
+6. **Plain English only.** The agent reads the skill cold, without your
+   session context. No coined terms — say "the framework's conventions,"
+   not "the pack"; say what happens, not "rides along" or "stays out of
+   it."
+7. **State the IO.** What the skill takes in, what it produces, and what
+   done looks like — however small the skill. "Turn what
+   `/infer-conventions` finds into `REVIEW.md` — done when a review can
+   judge from it without re-discovering anything."
+8. **Process skills are short.** Reference earns length only as rules.
 
 ## Downstream
 
@@ -57,6 +90,9 @@ plans/
    asks an agent to run must be non-interactive (`-y`, explicit flags) — an
    interactive prompt hangs the run
 3. Verify structure: `npx skills add . --list` discovers the expected set
-4. If the JSON contract or skill names change, downstream (the action) must change
+4. Open the PR — the repo's own CI reviews it with the product, applying
+   the Skill Style rules to skill files. Address its findings or
+   consciously accept them
+5. If the JSON contract or skill names change, downstream (the action) must change
    in lockstep
-5. Move the completed spec from `plans/pending/` to `plans/complete/`
+6. Move the completed spec from `plans/pending/` to `plans/complete/`

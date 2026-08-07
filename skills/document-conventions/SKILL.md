@@ -1,41 +1,26 @@
 ---
 name: document-conventions
-description: Documents a project's conventions — discovers where your standards live, confirms them with you, and writes a committed REVIEW.md table of contents so future reviews judge against your real standards. Optional; run once per project, re-run to amend.
+description: Documents a project's conventions — writes a committed REVIEW.md mapping review passes to the project's standards docs. Run once per project, re-run to amend.
 license: MIT
 metadata:
-  version: "1"
+  version: "2"
 ---
 
-# Review setup
+# Document conventions
 
-Configure the review skill for this repository. Run once when you first install `review`, and re-run whenever your standards move.
+Turn what `/infer-conventions` finds into this project's `REVIEW.md`, and commit it. Run once per project, re-run to amend.
 
-## What this does
+**Find:** where the project keeps its standards and what its stack is — via `/infer-conventions`, confirmed with the user.
 
-The review skill works out of the box by auto-discovering your standards. This makes it explicit: you tell it exactly where things live, so it doesn't hunt every time. The result is a `REVIEW.md` committed to the repo root — your file, not the skill's — so it survives skill updates. The review skill reads it first, and only falls back to auto-discovery when it's absent.
+**Produce:** `REVIEW.md` at the repo root — a natural-language table of contents mapping each review pass to the docs that define "correct" for it. It has succeeded when a review can judge against the project's real standards by following it, without re-discovering anything.
 
-## Step 1 — Discover
+## Step 1 — Discover and confirm
 
-Look for this project's standards and record what you find:
+Use `/infer-conventions`, then check what it found with the user — "these are your conventions docs, correct? Anything missed, anything wrong?" It's a conversation, not a form. Correct it from their answers before writing anything.
 
-- **Agent instructions**: `AGENTS.md`, `CLAUDE.md`
-- **Docs index**: `knowledge/table-of-contents.md`, `docs/README.md`
-- **Conventions**: `knowledge/technical/conventions.md`, `CONTRIBUTING.md`, `.cursor/rules/`, similar
-- **Architecture**: any architecture or design docs
-- **Stack**: `composer.json`, `package.json`, `Cargo.toml`, etc.
+## Step 2 — Write REVIEW.md
 
-## Step 2 — Confirm with the user
-
-Show your findings and check them — this is a conversation, not a form:
-
-- "These are your conventions docs — correct?"
-- "Any standards I missed? Any of these wrong?"
-
-Adjust the list based on the answers before writing anything.
-
-## Step 3 — Write REVIEW.md
-
-Write `REVIEW.md` at the repo root (create it if missing; merge into it if it exists). It's a **table of contents in natural language** — write it the way you'd guide a human teammate to the right docs.
+Write `REVIEW.md` at the repo root (create it if missing; merge into it if it exists). Write it the way you'd guide a human teammate to the right docs.
 
 Structure it as a `## <pass>` section per pass (mission, architecture, implementation, craft, security, performance), with the docs for that pass beneath it. Notes on writing it well:
 
@@ -82,14 +67,6 @@ Architecture generally lives in `<folder>`. The key docs are:
 - <anything worth saying that doesn't fit above>
 ```
 
-## Step 4 — Commit
+## Step 3 — Commit
 
 Stage and commit `REVIEW.md`. Follow the project's commit conventions.
-
-## See also
-
-To make the agent run reviews automatically before PRs, run the `setup-review-loop` skill — it wires the loop into the project's agent instructions.
-
-## Re-running
-
-Re-running this skill loads the existing `REVIEW.md` and amends it. Safe to run any time.
