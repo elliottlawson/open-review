@@ -9,9 +9,7 @@ metadata:
 
 # React
 
-> Rough draft — the seed of the React standard. Evolves via dogfooding and evals.
-
-The standard for React code, whether you're writing it or reviewing it. Read
+Apply these conventions when you're writing or reviewing React code. Read
 the sub-file for whatever the change touches:
 
 | The change involves... | Read |

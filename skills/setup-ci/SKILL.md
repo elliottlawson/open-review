@@ -3,16 +3,12 @@ name: setup-ci
 description: Sets up CI for reviews — asks a few questions, then writes the GitHub Actions workflow that runs open-review on every pull request. Run once per project, re-run to reconfigure.
 license: MIT
 metadata:
-  version: "1"
+  version: "2"
 ---
 
-# Review CI setup
+# Set up review CI
 
-Set up the GitHub Actions workflow that runs open-review on every pull request in this repository.
-
-## What this does
-
-Writes `.github/workflows/open-review.yml` from the bundled template (`workflow-template.yml` in this skill's directory), configured from your answers. The workflow runs the `review-as-json` skill via opencode on every PR and posts the review as a comment.
+Write `.github/workflows/open-review.yml` from the bundled template (`workflow-template.yml` in this skill's directory), configured from the user's answers below. Done when the file is committed and the user knows which secret to add.
 
 ## Step 1 — Check what's here
 
@@ -21,7 +17,7 @@ Writes `.github/workflows/open-review.yml` from the bundled template (`workflow-
 
 ## Step 2 — Ask
 
-Every question ships with a recommended default — state it and offer to keep it. We have an opinion; the user can override, but never faces a blank choice.
+Every question ships with a recommended default — state it and offer to keep it. The user can override, but never faces a blank choice.
 
 - **Provider and model.** Default: `openrouter` + `moonshotai/kimi-k2.6`. Alternatives: `anthropic` + `claude-sonnet-4`, `openai`, or any OpenRouter model.
 - **Sections.** All four on by default (must-fix, should-fix, suggestions, questions). Turn any off?
@@ -35,7 +31,7 @@ Create `.github/workflows/open-review.yml` from `workflow-template.yml`, filling
 
 ## Step 4 — The API key secret
 
-The workflow needs an API key. Confirm which secret name to use — the options follow from the provider chosen in Step 2:
+Confirm which secret name holds the workflow's API key — the options follow from the provider chosen in Step 2:
 
 1. **`OPEN_REVIEW_API_KEY`** (recommended) — one name, provider-agnostic; matches the template as written.
 2. **The provider's conventional name** — `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. — if they'd rather reuse a secret they already have.
@@ -49,7 +45,7 @@ Offer to set it via `gh secret set <NAME>` if they have the key handy.
 
 ## Step 5 — Commit
 
-Stage and commit the workflow file. Follow the project's commit conventions. The next PR will get a review automatically.
+Stage and commit the workflow file. Follow the project's commit conventions.
 
 ## Re-running
 
