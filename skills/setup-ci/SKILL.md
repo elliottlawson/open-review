@@ -3,7 +3,7 @@ name: setup-ci
 description: Sets up CI for reviews — asks a few questions, then writes the GitHub Actions workflow that runs open-review on every pull request. Run once per project, re-run to reconfigure.
 license: MIT
 metadata:
-  version: "2"
+  version: "3"
 ---
 
 # Set up review CI
@@ -19,7 +19,7 @@ Write `.github/workflows/open-review.yml` from the bundled template (`workflow-t
 
 Every question ships with a recommended default — state it and offer to keep it. The user can override, but never faces a blank choice.
 
-- **Provider and model.** Default: `openrouter` + `moonshotai/kimi-k2.6`. Alternatives: `anthropic` + `claude-sonnet-4`, `openai`, or any OpenRouter model.
+- **Provider and model.** Default: `openrouter` + `deepseek/deepseek-v4-flash-0731`. Alternatives: `deepseek/deepseek-v4-pro` for a stronger cheap model, `moonshotai/kimi-k2.7-code` for a different vendor, `anthropic` + `claude-sonnet-4`, or any OpenRouter model.
 - **Sections.** All four on by default (must-fix, should-fix, suggestions, questions). Turn any off?
 - **Verdict labels.** Defaults: LGTM / Changes Needed / Hold. Customize?
 
