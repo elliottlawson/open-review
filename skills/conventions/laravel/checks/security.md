@@ -4,9 +4,10 @@ Apply this check to the whole change, not one topic. It answers one
 question: **can this change be abused?**
 
 For topic-specific security rules, read the pattern that owns the code
-you're judging — a controller's authorization lives in `routing`, a
-query's injection risk in `eloquent`, uploaded files' validation in
-`validation`. This check covers what cuts across all of them.
+you're judging — a controller's authorization and route model binding
+live in `patterns/routing.md`; query and upload rules live with the
+pattern for the code that holds them (routing for now; the remaining
+patterns follow). This check covers what cuts across all of them.
 
 ## Boundaries and trust
 
@@ -73,7 +74,8 @@ query's injection risk in `eloquent`, uploaded files' validation in
 ## Check with the patterns
 
 When a finding touches code a pattern owns, cite the pattern's rule and
-point at it. The patterns are the standard for that topic; this check
+point at it (for now, `patterns/routing.md`; the remaining patterns
+follow). The patterns are the standard for that topic; this check
 provides the change-wide lens.
 
 ## Verify
