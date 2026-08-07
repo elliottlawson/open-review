@@ -1,18 +1,18 @@
 ---
 name: setup-review-loop
-description: Sets up the review loop — wires review into the project's agent instructions, so the agent runs the review skill on the full diff before opening a PR and iterates until it's clean. One-time setup; safe to re-run.
+description: Sets up the review loop — wires review into the project's agent instructions, so the agent runs `/review` on the full diff before opening a PR and iterates until it's clean. One-time setup; safe to re-run.
 license: MIT
 metadata:
-  version: "1"
+  version: "2"
 ---
 
 # Set up the review loop
 
-Make the project's agent run the `review` skill as part of its normal process — every change gets reviewed before it becomes a PR.
+Add the review loop to the project's agent instructions: before opening a PR, the agent runs `/review` on the full diff and iterates until it's clean. Done when the instruction sits in the project's instruction file, any mirrored files are in sync, and the user has seen the diff.
 
 ## Step 1 — Make sure review is installed
 
-The loop calls the `review` skill. Check for it (`.agents/skills/review/`, or the project/agent skills directory). If it's missing, install it (non-interactively, so nothing blocks on a prompt):
+The loop calls `/review`. Check for it (`.agents/skills/review/`, or the project/agent skills directory). If it's missing, install it (non-interactively, so nothing blocks on a prompt):
 
 ```bash
 npx skills add elliottlawson/open-review --skill review -y
@@ -32,7 +32,7 @@ If no instruction file exists, ask before creating one — a minimal `AGENTS.md`
 
 Add the loop instruction where the file describes workflow or process. The plainest form:
 
-> Before opening a PR, run the `review` skill on the full diff. Fix what it flags or consciously accept it; iterate until the review is clean.
+> Before opening a PR, run `/review` on the full diff. Fix what it flags or consciously accept it; iterate until the review is clean.
 
 **Fit it in, don't bolt it on.** If the file has a commit/PR workflow, extend that bullet list. If it has a skills table, add a row. Match the file's own structure and tone. Never rewrite, reorder, or "improve" what was already there. Keep mirrored files in sync.
 

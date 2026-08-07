@@ -3,10 +3,12 @@ name: review
 description: Reviews a change by running the mission, architecture, implementation, craft, security, and performance passes, then weighing them into a verdict.
 license: MIT
 metadata:
-  version: "3"
+  version: "4"
 ---
 
 # Review
+
+Review the change against the six passes, then weigh them into a verdict.
 
 If a referenced skill isn't available locally, fetch it from the open-review repo at runtime — the whole directory, subdirectories included. Use `npx skills use elliottlawson/open-review@<name>` if npx is available; otherwise fetch the directory from GitHub.
 

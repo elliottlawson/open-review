@@ -9,10 +9,7 @@ metadata:
 
 # Inertia
 
-> Rough draft — the seed of the Inertia standard. Evolves via dogfooding and evals.
-
-The bridge: Laravel serves, the frontend renders. Apply alongside the `laravel`
-and `react` packs.
+Apply these conventions alongside the `laravel` and `react` conventions.
 
 ## Server side
 

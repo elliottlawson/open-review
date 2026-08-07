@@ -9,9 +9,7 @@ metadata:
 
 # Laravel
 
-> Rough draft — the seed of the Laravel standard. Evolves via dogfooding and evals.
-
-The standard for Laravel code, whether you're writing it or reviewing it. Read
+Apply these conventions whether you're writing or reviewing Laravel code. Read
 the sub-file for whatever the change touches:
 
 | The change involves... | Read |
@@ -19,7 +17,7 @@ the sub-file for whatever the change touches:
 | Models, relationships, queries, migrations | `eloquent.md` |
 | Validating or authorizing incoming requests | `form-requests.md` |
 | Business logic, controllers, where logic lives | `actions.md` |
-| `Inertia::render`, page props, shared data | the `inertia` pack |
+| `Inertia::render`, page props, shared data | the `inertia` conventions |
 
 ## Core
 

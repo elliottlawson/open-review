@@ -1,16 +1,16 @@
 ---
 name: review-as-json
-description: The review, as JSON — runs the review skill and emits the result as a single structured JSON object. Used by CI; use the `review` skill directly for human-facing reviews.
+description: Runs `/review` and emits the result as a single structured JSON object. Used by CI; use `/review` directly for human-facing reviews.
 license: MIT
 metadata:
-  version: "1"
+  version: "2"
 ---
 
-# Review (JSON output)
+# Review as JSON
 
-Run the `review` skill on this change — follow it exactly: Step 0 (find the project's reference material), all six passes in order, then the verdict.
+Run `/review` on this change — follow it exactly: Step 0, all six passes in order, then the verdict.
 
-Instead of a prose report, emit the result as a single JSON object:
+Emit the result as a single JSON object instead of a prose report:
 
 ```json
 {
