@@ -37,8 +37,8 @@ move it down the chain.
 - Use **route model binding** — `public function show(Post $post)` — not
   an `$id` you then look up yourself.
 - Keep `routes/` files declarative: one line per route, no closures, no
-  business logic, no queries. A closure is a controller you refused to
-  write; extract it.
+  business logic, no queries. A route closure is a controller method you
+  haven't written yet; extract it.
 - Group routes by middleware that genuinely applies to the whole group;
   do not wrap every route in middleware it doesn't need.
 
@@ -110,6 +110,15 @@ move it down the chain.
 - Reference model classes as `Post::class`, never the string
   `'App\Models\Post'` — string class names break refactoring and are
   the single most common wiring mistake.
+- Give a reused query constraint a **scope** (`scopePublished`), not a
+  repeated `where` at each call site — the constraint lives on the
+  model, once, and reads as `$query->published()`.
+- Use `select()` / `cursor()` / `chunk()` for large result sets instead
+  of loading whole tables into memory; fetch only the columns you use.
+- Migrations are **additive and forward-only**: add columns and tables
+  in new migrations rather than rewriting old ones, and prefer
+  reversible operations (`addColumn`/`dropColumn`) over destructive
+  rebuilds.
 
 ## Common wiring failures
 
