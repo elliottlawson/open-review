@@ -8,9 +8,9 @@ metadata:
 
 # Infer conventions
 
-Answer two questions: where does this project keep its standards, and what's its stack? Map, don't judge.
+Map where the project keeps its standards, and what its stack is.
 
-Check for a `REVIEW.md` at the repo root first — if it exists, it's authoritative: read it, then the docs it points to.
+If the repo root has a `REVIEW.md`, read it, then the docs it points to — it overrides anything found below.
 
 Otherwise discover:
 
@@ -20,4 +20,4 @@ Otherwise discover:
 - **Architecture** — design and decision docs.
 - **Stack** — the frameworks, from the project's manifests. Name them plainly (e.g. Laravel, React, Inertia).
 
-Report what you found and where. If the project has no documented standards, say so — never invent any.
+Report what you found and where — no judgment. If the project has no documented standards, say so — never invent any.

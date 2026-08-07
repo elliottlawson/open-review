@@ -1,18 +1,14 @@
 ---
 name: document-conventions
-description: Documents a project's conventions — discovers where your standards live, confirms them with you, and writes a committed REVIEW.md table of contents so future reviews judge against your real standards. Optional; run once per project, re-run to amend.
+description: Documents a project's conventions — writes a committed REVIEW.md mapping review passes to the project's standards docs. Run once per project, re-run to amend.
 license: MIT
 metadata:
   version: "2"
 ---
 
-# Review setup
+# Document conventions
 
-Configure the review skill for this repository. Run once when you first install `review`, and re-run whenever your standards move.
-
-## What this does
-
-The review skill works out of the box by auto-discovering your standards. This makes it explicit: you tell it exactly where things live, so it doesn't hunt every time. The result is a `REVIEW.md` committed to the repo root — your file, not the skill's — so it survives skill updates. The review skill reads it first, and only falls back to auto-discovery when it's absent.
+Write this project's `REVIEW.md` — a natural-language table of contents mapping each review pass to the docs that define "correct" for this project. It commits to the repo root and survives skill updates; `/review` reads it first. Run once per project, re-run to amend.
 
 ## Step 1 — Discover and confirm
 

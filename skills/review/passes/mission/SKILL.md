@@ -8,10 +8,6 @@ metadata:
 
 # Mission
 
-Two steps, each a skill in this directory — read it and apply it:
+Find the target outcome of the work with `/uncover-mission`, then judge whether the work achieves it with `/assess-against-mission`.
 
-1. **`/uncover-mission`** — find the target outcome of the work.
-2. **`/assess-against-mission`** — judge whether the work in scope achieves it.
-
-If the mission is unclear or the work misses it, that is the most important
-finding in the review. State it plainly before anything else.
+A missed or unclear mission is the most important finding in the review. State it first.

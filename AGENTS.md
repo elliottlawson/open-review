@@ -10,6 +10,8 @@ skills directly.
 |---|---|
 | `skills/review/SKILL.md` | **Source of truth** for the review process — Step 0 (reference material), pass order, verdict weighing, output discipline |
 | `skills/review/passes/<name>/SKILL.md` | The six passes: mission, architecture, implementation, craft, security, performance. Each answers one question and nothing else |
+| `skills/infer-conventions/SKILL.md` | Maps where a project keeps its standards and what its stack is — review's Step 0 and document-conventions' discovery |
+| `skills/load-conventions/SKILL.md` | Loads the stack's conventions packs on demand — called from passes, and usable when writing code |
 | `skills/review-as-json/SKILL.md` | The JSON output contract CI consumes (`verdict`, `findings`, `sectionSummaries`, …) |
 | `skills/document-conventions/SKILL.md` | Writes a project's `REVIEW.md` — the natural-language table of contents mapping passes to project docs |
 | `skills/setup-ci/SKILL.md` + `workflow-template.yml` | Writes the GitHub Actions workflow |
@@ -21,9 +23,10 @@ skills directly.
 
 - **Install one skill:** `npx skills add elliottlawson/open-review --skill review`.
 - **Everything else resolves at runtime** via `npx skills use elliottlawson/open-review@<name>`
-  or raw fetch — `document-conventions`, `setup-ci`, `review-as-json`, and the
-  conventions packs are never installed by end users. (CI installs `review` +
-  `review-as-json` per run, which *is* runtime resolution.)
+  or raw fetch — `document-conventions`, `setup-ci`, `review-as-json`,
+  `infer-conventions`, `load-conventions`, and the conventions packs are
+  never installed by end users. (CI installs `review` + `review-as-json`
+  per run, which *is* runtime resolution.)
 - **Conventions layer (precedence):** project conventions (`REVIEW.md` →
   auto-discovered `AGENTS.md`/docs) **override** framework packs
   (`skills/conventions/<stack>/`) **override** the passes' general merits.
@@ -31,6 +34,23 @@ skills directly.
   change touches. Addressed by leaf name (`@laravel`), regardless of nesting.
 - **No publishing step:** `npx skills` resolves straight from GitHub. skills.sh
   listing is optional discoverability (lab #11).
+
+## Skill Style
+
+Skills are instructions, not documentation about instructions. House rules:
+
+1. **Body starts with the do.** No heading restating the name, no "this
+   skill is…", no orientation paragraph. First sentence is an instruction.
+2. **Every sentence is an imperative or a rule.** If it explains what
+   something *is* instead of what to *do*, cut it.
+3. **Skills are verbs.** "Use `/load-conventions` for the frameworks the
+   change touches" — never "Run `/load-conventions`; read what it points
+   to." The description is the trigger; the body is the work.
+4. **One line per instruction.** If a sentence needs an em-dash caveat to
+   stand, it's probably two instructions or none.
+5. **Name the target, trust the intelligence.** "Find the project's docs
+   and standards," not a checklist of exact filenames.
+6. **Process skills are short.** Reference earns length only as rules.
 
 ## Downstream
 

@@ -8,19 +8,17 @@ metadata:
 
 # Review
 
-Review the change by running the passes in `passes/`, in order. Each pass is a skill in this directory — read it and apply it.
-
 ## Scope
 
 The change is the diff against the merge-base with the base branch (`git diff origin/main...HEAD`, or the base/range the caller gives). Confirm the ref resolves; if the diff is empty, say so and stop. Skip generated and vendored files.
 
 ## Step 0 — Find the project's reference material
 
-Run `/infer-conventions`; read what it points to, and use those paths throughout the passes. If the project has no documented standards, say so in the verdict instead of inventing any.
+Map the project's standards and stack with `/infer-conventions`; use those paths throughout the passes. If the project has no documented standards, say so in the verdict instead of inventing any.
 
-Run: mission → architecture → implementation → craft → security → performance.
+## Passes
 
-Then weigh the passes into a verdict:
+Run in order: mission → architecture → implementation → craft → security → performance. Then weigh them into a verdict:
 
 - **Approve** — mission met, no blocking findings.
 - **Changes needed** — real issues found; name them.
@@ -38,4 +36,4 @@ Report your findings in prose — severity (critical / warning / info), the pass
 - **Cite the standard, state the target pattern.** When the project has documented standards, name the doc a finding violates and the pattern to follow instead.
 - **Report repeated issues once.** The same issue across multiple files is one finding — note that it applies broadly.
 
-If you're running under CI, `/review-as-json` wraps this review and shapes the output as JSON instead.
+Under CI, `/review-as-json` wraps this review and shapes the output as JSON.
