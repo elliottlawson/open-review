@@ -52,7 +52,10 @@ Skills are instructions, not documentation about instructions. House rules:
    stand, it's probably two instructions or none.
 5. **Name the target, trust the intelligence.** "Find the project's docs
    and standards," not a checklist of exact filenames.
-6. **Process skills are short.** Reference earns length only as rules.
+6. **State the IO.** What the skill takes in, what it produces, and what
+   done looks like. "Turn the `/infer-conventions` map into `REVIEW.md` —
+   done when a review can judge from it without re-discovering anything."
+7. **Process skills are short.** Reference earns length only as rules.
 
 ## Downstream
 
