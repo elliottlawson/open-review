@@ -23,5 +23,5 @@ jobs:
         uses: elliottlawson/open-review-action@v2
         with:
           provider: openrouter
-          model: moonshotai/kimi-k2.6
+          model: deepseek/deepseek-v4-flash-0731
           api_key: ${{ secrets.OPEN_REVIEW_API_KEY }}
